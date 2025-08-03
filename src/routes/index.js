@@ -1,7 +1,7 @@
 import express from "express";
-import Admin from "./api_v_1/Admin.routes.js";
+import User from "./api_v_1/user.routes.js";
 const router = express.Router();
 
-router.use("/admins", Admin);
+router.use("/users", User);
 
-export default router;
+export default router; 

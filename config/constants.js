@@ -15,14 +15,14 @@ export const RESPONSE_CODES = {
 export const RESPONSE_MESSAGES = {
 	USER_DETAIL: "User details fetched",
 	REGISTER_SUCCESS: "Register successfully",
-	ADMIN_FAILED_TO_REGISTER: "Admin failed to register",
-	ADMIN_DETAILS_FETCHED: "Admin details fetched",
-	ADMIN_UPDATED: "Admin updated successfully",
+	USER_FAILED_TO_REGISTER: "User failed to register",
+	USER_DETAILS_FETCHED: "User details fetched",
+	USER_UPDATED: "User updated successfully",
 	REGISTER_SUCCESS: "Register successfully",
 	LOGIN_SUCCESS: "Login successfully",
 	FOUND: "Found",
 	NO_DATA_FOUND: "Not data found",
-	ADMIN_NOT_FOUND: "Admin not found",
+	USER_NOT_FOUND: "User not found",
 	INVALID_EMAIL: "Invalid Email",
 	INVALID_ROLE: "Invalid Role",
 	EMAIL_ALREADY_REGISTERED: "Email already registered, please try another email",
@@ -31,7 +31,7 @@ export const RESPONSE_MESSAGES = {
 
 
 export const COLLECTION_NAMES = {
-	ADMIN_COLLECTION: "Admins",
+	USER_COLLECTION: "Users",
 	DISTRIBUTOR_COLLECTION: "Distributors",
 	DISTRIBUTOR_CONTACT_COLLECTION: "Distributor_Contacts",
 	DISTRIBUTOR_NOTE_COLLECTION: "Distributor_Notes",

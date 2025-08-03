@@ -3,7 +3,7 @@ import { COLLECTION_NAMES, RESPONSE_CODES, RESPONSE_MESSAGES } from "../../../co
 import { findOne, insertOne, updateOne } from "../../../config/dbMethods.js";
 import { ObjectId } from "mongodb";
 
-export const adminDetail = async ({ type, _id, role, email }) => {
+export const userDetail = async ({ type, _id, role, email }) => {
     try {
         let response = {
             status: 0,
@@ -30,7 +30,7 @@ export const adminDetail = async ({ type, _id, role, email }) => {
         } else {
             user_params.email = email.toLowerCase();
         };
-        const user_details = await findOne(COLLECTION_NAMES.ADMIN_COLLECTION, user_params, project);
+        const user_details = await findOne(COLLECTION_NAMES.USER_COLLECTION, user_params, project);
         if (user_details) {
             response.status = 1;
             response.message = RESPONSE_MESSAGES.USER_DETAIL;
@@ -50,7 +50,7 @@ export const adminDetail = async ({ type, _id, role, email }) => {
     };
 };
 
-export const adminRegisterService = async ({ name, email, role, regions, distributorId }) => {
+export const registerService = async ({ name, email, role, regions, distributorId }) => {
     try {
         let response = {
             status: 0,
@@ -74,14 +74,14 @@ export const adminRegisterService = async ({ name, email, role, regions, distrib
         } else if (distributorId) {
             conditions.distributorId = distributorId;
         };
-        const result = await insertOne(COLLECTION_NAMES.ADMIN_COLLECTION, conditions);
+        const result = await insertOne(COLLECTION_NAMES.USER_COLLECTION, conditions);
         if (result.acknowledged) {
             response.status = 1;
             response.message = RESPONSE_MESSAGES.REGISTER_SUCCESS;
             response.statusCode = RESPONSE_CODES.POST;
             response.data = { insertedId: result.insertedId };
         } else {
-            response.message = RESPONSE_MESSAGES.ADMIN_FAILED_TO_REGISTER;
+            response.message = RESPONSE_MESSAGES.USER_FAILED_TO_REGISTER;
             response.statusCode = RESPONSE_CODES.BAD_REQUEST;
         };
         return response;
@@ -95,7 +95,7 @@ export const adminRegisterService = async ({ name, email, role, regions, distrib
     };
 };
 
-export const adminLoginService = async ({ _id, refresh_token }) => {
+export const loginService = async ({ _id, refresh_token }) => {
     try {
         let response = {
             status: 0,
@@ -104,7 +104,7 @@ export const adminLoginService = async ({ _id, refresh_token }) => {
             data: {}
         };
         const currentTime = parseInt(moment().tz(process.env.TIMEZONE).format("x"));
-        const result = await updateOne(COLLECTION_NAMES.ADMIN_COLLECTION, { _id }, { refreshToken: refresh_token, status: 1, updatedAt: currentTime });
+        const result = await updateOne(COLLECTION_NAMES.USER_COLLECTION, { _id }, { refreshToken: refresh_token, status: 1, updatedAt: currentTime });
         if (result.matchedCount === 0) {
             response.message = RESPONSE_MESSAGES.NO_DATA_FOUND;
             response.statusCode = RESPONSE_CODES.NOT_FOUND;
@@ -141,7 +141,7 @@ export const updateProfileService = async ({ _id, name, email }) => {
         if (email) {
             conditions.email = email;
         };
-        const result = await updateOne(COLLECTION_NAMES.ADMIN_COLLECTION, { _id: new ObjectId(_id) }, conditions);
+        const result = await updateOne(COLLECTION_NAMES.USER_COLLECTION, { _id: new ObjectId(_id) }, conditions);
         if (result.matchedCount === 0) {
             response.message = RESPONSE_MESSAGES.NO_DATA_FOUND;
             response.statusCode = RESPONSE_CODES.NOT_FOUND;
@@ -159,4 +159,3 @@ export const updateProfileService = async ({ _id, name, email }) => {
         };
     };
 };
-

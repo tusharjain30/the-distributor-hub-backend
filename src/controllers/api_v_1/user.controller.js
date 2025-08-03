@@ -1,9 +1,8 @@
 import { RESPONSE_CODES, RESPONSE_MESSAGES } from "../../../config/constants.js";
 import { accessToken, refreshToken } from "../../helpers/jwt.js";
-import { adminRegisterService, adminDetail, adminLoginService, updateProfileService } from "../../services/api_v_1/admin.service.js";
+import { registerService, loginService, updateProfileService, userDetail } from "../../services/api_v_1/user.service.js";
 
-// register controller for admin
-export const adminRegisterController = async (req, res) => {
+export const registerController = async (req, res) => {
     try {
         let response = {
             status: 0,
@@ -12,9 +11,9 @@ export const adminRegisterController = async (req, res) => {
             data: {}
         };
         const { name, email, role, regions, distributorId } = req.body;
-        const admin_email = await adminDetail({ email });
-        if (!admin_email.status) {
-            response = await adminRegisterService({ name, email, role, regions, distributorId });
+        const user_email = await userDetail({ email });
+        if (!user_email.status) {
+            response = await registerService({ name, email, role, regions, distributorId });
         } else {
             response = {
                 status: 0,
@@ -34,7 +33,6 @@ export const adminRegisterController = async (req, res) => {
     };
 };
 
-// login controller for admin
 export const authLoginController = async (req, res) => {
     try {
         const { email, role } = req.body;
@@ -44,21 +42,23 @@ export const authLoginController = async (req, res) => {
             statusCode: RESPONSE_CODES.GET,
             data: {}
         };
-        let admin_email = await adminDetail({ email });
-        if (admin_email.status) {
-            const admin_info = admin_email?.data;
-            if (admin_info.role !== role) {
+        let user_email = await userDetail({ email });
+        if (user_email.status) {
+            const user_info = user_email?.data;
+            if (user_info.role !== role) {
                 response.message = RESPONSE_MESSAGES.INVALID_ROLE;
                 response.statusCode = RESPONSE_CODES.BAD_REQUEST;
             } else {
-                const { _id } = admin_info;
-                const refresh_token = refreshToken({ adminId: _id, type: "refresh" });
-                const access_token = accessToken({ adminId: _id, type: "access" });
-                response = await adminLoginService({ _id, refresh_token });
-                response.data = {
-                    _id,
-                    access_token,
-                    refresh_token,
+                const { _id } = user_info;
+                const refresh_token = refreshToken({ userId: _id, type: "refresh" });
+                const access_token = accessToken({ userId: _id, type: "access" });
+                response = await loginService({ _id, refresh_token });
+                if (response.status) {
+                    response.data = {
+                        _id,
+                        access_token,
+                        refresh_token,
+                    };
                 };
             };
         } else {
@@ -76,7 +76,6 @@ export const authLoginController = async (req, res) => {
     };
 };
 
-// update profile controller for admin
 export const updateProfileController = async (req, res) => {
     try {
         let response = {
@@ -85,14 +84,14 @@ export const updateProfileController = async (req, res) => {
             statusCode: RESPONSE_CODES.GET,
             data: {}
         };
-        const adminId = req.adminId;
+        const userId = req.userId;
         const body = req.body;
-        body._id = adminId;
-        let admin_info = await adminDetail({ type: "limited_detail", _id: adminId });
-        if (admin_info.status) {
+        body._id = userId;
+        let user_info = await userDetail({ type: "limited_detail", _id: userId });
+        if (user_info.status) {
             response = await updateProfileService(body);
         } else {
-            response.message = RESPONSE_MESSAGES.ADMIN_NOT_FOUND;
+            response.message = RESPONSE_MESSAGES.USER_NOT_FOUND;
             response.statusCode = RESPONSE_CODES.NOT_FOUND;
         };
         res.status(response.statusCode).json(response);

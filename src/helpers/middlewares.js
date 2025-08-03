@@ -6,8 +6,8 @@ export const authMiddleWare = async (req, res, next) => {
   try {
     initLogger();
     const ignorePaths = [
-      '/api_v_1/admins/register',
-      '/api_v_1/admins/login',
+      '/api_v_1/users/register',
+      '/api_v_1/users/login',
     ];
 
     const {
@@ -43,8 +43,7 @@ export const authMiddleWare = async (req, res, next) => {
     }
 
     logObj.user = verifyToken(headers.authorization);
-    console.log(logObj.user._id)
-    req.adminId = logObj.user.adminId;
+    req.userId = logObj.user.userId;
     logInfo('Activity Log: ', logObj);
     return next();
   }
