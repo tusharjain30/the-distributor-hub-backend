@@ -44,10 +44,14 @@ export const authLoginController = async (req, res) => {
         };
         let user_email = await userDetail({ email });
         if (user_email.status) {
-            const user_info = user_email?.data;
-            if (user_info.role !== role) {
-                response.message = RESPONSE_MESSAGES.INVALID_ROLE;
-                response.statusCode = RESPONSE_CODES.BAD_REQUEST;
+            const user_info = user_email.data;
+            if (user_info?.role !== role) {
+                response = {
+                    status: 0,
+                    message: RESPONSE_MESSAGES.INVALID_ROLE,
+                    statusCode: RESPONSE_CODES.BAD_REQUEST,
+                    data: {}
+                };
             } else {
                 const { _id } = user_info;
                 const refresh_token = refreshToken({ userId: _id, type: "refresh" });
@@ -62,8 +66,12 @@ export const authLoginController = async (req, res) => {
                 };
             };
         } else {
-            response.message = RESPONSE_MESSAGES.INVALID_EMAIL;
-            response.statusCode = RESPONSE_CODES.BAD_REQUEST;
+            response = {
+                status: 0,
+                message: RESPONSE_MESSAGES.INVALID_EMAIL,
+                statusCode: RESPONSE_CODES.BAD_REQUEST,
+                data: {}
+            };
         };
         res.status(response.statusCode).json(response);
     } catch (error) {
@@ -87,12 +95,30 @@ export const updateProfileController = async (req, res) => {
         const userId = req.userId;
         const body = req.body;
         body._id = userId;
-        let user_info = await userDetail({ type: "limited_detail", _id: userId });
-        if (user_info.status) {
-            response = await updateProfileService(body);
+        console.log(body)
+        if (body.email) {
+            let user_info = await userDetail({ email: body.email });
+            if (user_info.status) {
+                response = {
+                    status: 0,
+                    message: RESPONSE_MESSAGES.EMAIL_ALREADY_REGISTERED,
+                    statusCode: RESPONSE_CODES.ALREADY_EXIST,
+                    data: {}
+                };
+                return res.status(response.statusCode).json(response);
+            };
+        };
+        response = await updateProfileService(body);
+        if (response.status) {
+            response = {
+                status: 1,
+                message: RESPONSE_MESSAGES.PROFILE_UPDATED,
+                statusCode: RESPONSE_CODES.GET,
+                data: {}
+            };
         } else {
-            response.message = RESPONSE_MESSAGES.USER_NOT_FOUND;
-            response.statusCode = RESPONSE_CODES.NOT_FOUND;
+            response.message = RESPONSE_MESSAGES.FAILED_TO_UPDATE_PROFILE;
+            response.statusCode = RESPONSE_CODES.BAD_REQUEST;
         };
         res.status(response.statusCode).json(response);
     } catch (error) {

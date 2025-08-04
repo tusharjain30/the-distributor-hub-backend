@@ -26,7 +26,8 @@ export const RESPONSE_MESSAGES = {
 	INVALID_EMAIL: "Invalid Email",
 	INVALID_ROLE: "Invalid Role",
 	EMAIL_ALREADY_REGISTERED: "Email already registered, please try another email",
-	PROFILE_UPDATED: "Profile updated successfully"
+	PROFILE_UPDATED: "Profile updated successfully",
+	FAILED_TO_UPDATE_PROFILE: "Failed to update profile"
 };
 
 

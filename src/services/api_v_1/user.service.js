@@ -32,12 +32,19 @@ export const userDetail = async ({ type, _id, role, email }) => {
         };
         const user_details = await findOne(COLLECTION_NAMES.USER_COLLECTION, user_params, project);
         if (user_details) {
-            response.status = 1;
-            response.message = RESPONSE_MESSAGES.USER_DETAIL;
-            response.data = user_details;
+            response = {
+                status: 1,
+                message: RESPONSE_MESSAGES.USER_DETAIL,
+                statusCode: RESPONSE_CODES.GET,
+                data: user_details
+            };
         } else {
-            response.message = RESPONSE_MESSAGES.NO_DATA_FOUND;
-            response.statusCode = RESPONSE_CODES.NOT_FOUND;
+            response = {
+                status: 0,
+                message: RESPONSE_MESSAGES.NO_DATA_FOUND,
+                statusCode: RESPONSE_CODES.NOT_FOUND,
+                data: {}
+            };
         };
         return response;
     } catch (error) {
@@ -76,13 +83,19 @@ export const registerService = async ({ name, email, role, regions, distributorI
         };
         const result = await insertOne(COLLECTION_NAMES.USER_COLLECTION, conditions);
         if (result.acknowledged) {
-            response.status = 1;
-            response.message = RESPONSE_MESSAGES.REGISTER_SUCCESS;
-            response.statusCode = RESPONSE_CODES.POST;
-            response.data = { insertedId: result.insertedId };
+            response = {
+                status: 1,
+                message: RESPONSE_MESSAGES.REGISTER_SUCCESS,
+                statusCode: RESPONSE_CODES.POST,
+                data: { insertedId: result.insertedId }
+            };
         } else {
-            response.message = RESPONSE_MESSAGES.USER_FAILED_TO_REGISTER;
-            response.statusCode = RESPONSE_CODES.BAD_REQUEST;
+            response = {
+                status: 0,
+                message: RESPONSE_MESSAGES.USER_FAILED_TO_REGISTER,
+                statusCode: RESPONSE_CODES.BAD_REQUEST,
+                data: {}
+            };
         };
         return response;
     } catch (error) {
@@ -106,11 +119,19 @@ export const loginService = async ({ _id, refresh_token }) => {
         const currentTime = parseInt(moment().tz(process.env.TIMEZONE).format("x"));
         const result = await updateOne(COLLECTION_NAMES.USER_COLLECTION, { _id }, { refreshToken: refresh_token, status: 1, updatedAt: currentTime });
         if (result.matchedCount === 0) {
-            response.message = RESPONSE_MESSAGES.NO_DATA_FOUND;
-            response.statusCode = RESPONSE_CODES.NOT_FOUND;
+            response = {
+                status: 0,
+                message: RESPONSE_MESSAGES.NO_DATA_FOUND,
+                statusCode: RESPONSE_CODES.NOT_FOUND,
+                data: {}
+            };
         } else {
-            response.status = 1;
-            response.message = RESPONSE_MESSAGES.LOGIN_SUCCESS;
+            response = {
+                status: 1,
+                message: RESPONSE_MESSAGES.LOGIN_SUCCESS,
+                statusCode: RESPONSE_CODES.GET,
+                data: {}
+            };
         };
         return response;
     } catch (error) {
@@ -143,11 +164,19 @@ export const updateProfileService = async ({ _id, name, email }) => {
         };
         const result = await updateOne(COLLECTION_NAMES.USER_COLLECTION, { _id: new ObjectId(_id) }, conditions);
         if (result.matchedCount === 0) {
-            response.message = RESPONSE_MESSAGES.NO_DATA_FOUND;
-            response.statusCode = RESPONSE_CODES.NOT_FOUND;
+            response = {
+                status: 0,
+                message: RESPONSE_MESSAGES.NO_DATA_FOUND,
+                statusCode: RESPONSE_CODES.NOT_FOUND,
+                data: {}
+            };
         } else {
-            response.status = 1;
-            response.message = RESPONSE_MESSAGES.PROFILE_UPDATED;
+            response = {
+                status: 1,
+                message: RESPONSE_MESSAGES.PROFILE_UPDATED,
+                statusCode: RESPONSE_CODES.GET,
+                data: {}
+            };
         };
         return response;
     } catch (error) {
