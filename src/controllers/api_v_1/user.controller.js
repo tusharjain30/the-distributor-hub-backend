@@ -95,7 +95,6 @@ export const updateProfileController = async (req, res) => {
         const userId = req.userId;
         const body = req.body;
         body._id = userId;
-        console.log(body)
         if (body.email) {
             let user_info = await userDetail({ email: body.email });
             if (user_info.status) {
@@ -117,8 +116,12 @@ export const updateProfileController = async (req, res) => {
                 data: {}
             };
         } else {
-            response.message = RESPONSE_MESSAGES.FAILED_TO_UPDATE_PROFILE;
-            response.statusCode = RESPONSE_CODES.BAD_REQUEST;
+            response = {
+                status: 0,
+                message: RESPONSE_MESSAGES.FAILED_TO_UPDATE_PROFILE,
+                statusCode: RESPONSE_CODES.BAD_REQUEST,
+                data: {}
+            };
         };
         res.status(response.statusCode).json(response);
     } catch (error) {
