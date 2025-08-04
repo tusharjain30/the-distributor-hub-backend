@@ -70,7 +70,16 @@ export const updateProfileSchema = Joi.object({
         'string.empty': 'Email cannot be empty',
         'string.email': 'Email must be a valid email',
         'string.lowercase': 'Email must be in lowercase',
-    })
+    }),
+    distributorId: Joi.string().valid("1", "2", "3", "4", "5").optional().messages({
+        'any.only': 'Distributor id must be one of {{#valids}}'
+    }),
+    regions: Joi.array().min(1).items(Joi.string().valid("northAmerica", "europe", "asiaPacific", "latinAmerica", "middleEast&Africa")
+    ).optional().messages({
+        'array.base': 'Regions must be an array of strings.',
+        'array.min': 'At least one region must be selected for Regional Managers.',
+        'any.only': 'Regions must be one of {{#valids}}',
+    }),
 }).min(1).messages({
     'object.min': 'At least one field must be provided for update',
 });

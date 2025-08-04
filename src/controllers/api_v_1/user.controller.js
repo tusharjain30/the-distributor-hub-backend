@@ -95,31 +95,50 @@ export const updateProfileController = async (req, res) => {
         const userId = req.userId;
         const body = req.body;
         body._id = userId;
-        if (body.email) {
-            let user_info = await userDetail({ email: body.email });
-            if (user_info.status) {
+        let user_info = await userDetail({ type: "limited_detail", _id: userId });
+        if (user_info.status) {
+            if (body.email) {
+                let user_info = await userDetail({ email: body.email });
+                if (user_info.status) {
+                    response = {
+                        status: 0,
+                        message: RESPONSE_MESSAGES.EMAIL_ALREADY_REGISTERED,
+                        statusCode: RESPONSE_CODES.ALREADY_EXIST,
+                        data: {}
+                    };
+                    return res.status(response.statusCode).json(response);
+                };
+            };
+            const userInfo = user_info.data;
+            if (userInfo.role === "regionalManager") {
+                delete body.distributorId;
+            } else if (userInfo.role === "distributor") {
+                delete body.regions;
+            } else {
+                delete body.distributorId;
+                delete body.regions;
+            };
+            response = await updateProfileService(body);
+            if (response.status) {
                 response = {
-                    status: 0,
-                    message: RESPONSE_MESSAGES.EMAIL_ALREADY_REGISTERED,
-                    statusCode: RESPONSE_CODES.ALREADY_EXIST,
+                    status: 1,
+                    message: RESPONSE_MESSAGES.PROFILE_UPDATED,
+                    statusCode: RESPONSE_CODES.GET,
                     data: {}
                 };
-                return res.status(response.statusCode).json(response);
-            };
-        };
-        response = await updateProfileService(body);
-        if (response.status) {
-            response = {
-                status: 1,
-                message: RESPONSE_MESSAGES.PROFILE_UPDATED,
-                statusCode: RESPONSE_CODES.GET,
-                data: {}
+            } else {
+                response = {
+                    status: 0,
+                    message: RESPONSE_MESSAGES.FAILED_TO_UPDATE_PROFILE,
+                    statusCode: RESPONSE_CODES.BAD_REQUEST,
+                    data: {}
+                };
             };
         } else {
             response = {
                 status: 0,
-                message: RESPONSE_MESSAGES.FAILED_TO_UPDATE_PROFILE,
-                statusCode: RESPONSE_CODES.BAD_REQUEST,
+                message: RESPONSE_MESSAGES.USER_NOT_FOUND,
+                statusCode: RESPONSE_CODES.NOT_FOUND,
                 data: {}
             };
         };

@@ -27,6 +27,8 @@ export const userDetail = async ({ type, _id, role, email }) => {
             project.name = 1;
             project.role = 1;
             project.email = 1;
+            project.regions = 1;
+            project.distributorId = 1;
         } else {
             user_params.email = email.toLowerCase();
         };
@@ -144,7 +146,7 @@ export const loginService = async ({ _id, refresh_token }) => {
     };
 };
 
-export const updateProfileService = async ({ _id, name, email }) => {
+export const updateProfileService = async ({ _id, name, email, regions, distributorId }) => {
     try {
         let response = {
             status: 0,
@@ -161,6 +163,12 @@ export const updateProfileService = async ({ _id, name, email }) => {
         };
         if (email) {
             conditions.email = email;
+        };
+        if (regions) {
+            conditions.regions = regions;
+        };
+        if (distributorId) {
+            conditions.distributorId = distributorId;
         };
         const result = await updateOne(COLLECTION_NAMES.USER_COLLECTION, { _id: new ObjectId(_id) }, conditions);
         if (result.matchedCount === 0) {
