@@ -2,33 +2,37 @@ import moment from "moment-timezone";
 import { COLLECTION_NAMES, RESPONSE_CODES, RESPONSE_MESSAGES } from "../../../config/constants.js";
 import { findOne, insertOne, updateOne } from "../../../config/dbMethods.js";
 import { ObjectId } from "mongodb";
+import { refreshToken } from "../../helpers/jwt.js";
+import { RESPONSE } from "../../helpers/response.js";
 
 export const userDetail = async ({ type, _id, role, email }) => {
     try {
-        let response = {
-            status: 0,
-            message: "",
-            statusCode: RESPONSE_CODES.GET,
-            data: {}
-        };
+        let response = RESPONSE;
         const user_params = {
             isDeleted: false
         };
-        const project = {};
+        let project = {};
 
         if (type === 'id') {
             user_params._id = new ObjectId(_id);
-            project.refreshToken = 0;
+            project = {
+                refreshToken: 0
+            };
         } else if (type === 'role') {
             user_params.role = role;
         } else if (type === 'limited_detail') {
             user_params._id = new ObjectId(_id);
-            project._id = 1;
-            project.name = 1;
-            project.role = 1;
-            project.email = 1;
-            project.regions = 1;
-            project.distributorId = 1;
+            project = {
+                _id: 1,
+                name: 1,
+                role: 1,
+                email: 1,
+                regions: 1,
+                distributorId: 1
+            };
+        } else if (type === "email_not_equal") {
+            user_params.email = email.toLowerCase();
+            user_params._id = { $ne: new ObjectId(_id) };
         } else {
             user_params.email = email.toLowerCase();
         };
@@ -61,12 +65,7 @@ export const userDetail = async ({ type, _id, role, email }) => {
 
 export const registerService = async ({ name, email, role, regions, distributorId }) => {
     try {
-        let response = {
-            status: 0,
-            message: "",
-            statusCode: RESPONSE_CODES.GET,
-            data: {}
-        };
+        let response = RESPONSE;
         const currentTime = parseInt(moment().tz(process.env.TIMEZONE).format("x"));
         let conditions = {
             name,
@@ -74,6 +73,7 @@ export const registerService = async ({ name, email, role, regions, distributorI
             role,
             refreshToken: "",
             status: 0,
+            password: null,
             isDeleted: false,
             createdAt: currentTime,
             updatedAt: currentTime
@@ -112,12 +112,7 @@ export const registerService = async ({ name, email, role, regions, distributorI
 
 export const loginService = async ({ _id, refresh_token }) => {
     try {
-        let response = {
-            status: 0,
-            message: "",
-            statusCode: RESPONSE_CODES.GET,
-            data: {}
-        };
+        let response = RESPONSE;
         const currentTime = parseInt(moment().tz(process.env.TIMEZONE).format("x"));
         const result = await updateOne(COLLECTION_NAMES.USER_COLLECTION, { _id }, { refreshToken: refresh_token, status: 1, updatedAt: currentTime });
         if (result.matchedCount === 0) {
@@ -148,21 +143,12 @@ export const loginService = async ({ _id, refresh_token }) => {
 
 export const updateProfileService = async ({ _id, name, email, regions, distributorId }) => {
     try {
-        let response = {
-            status: 0,
-            message: "",
-            statusCode: RESPONSE_CODES.GET,
-            data: {}
-        };
+        let response = RESPONSE;
         const currentTime = parseInt(moment().tz(process.env.TIMEZONE).format("x"));
         const conditions = {
+            name,
+            email,
             updatedAt: currentTime
-        };
-        if (name) {
-            conditions.name = name;
-        };
-        if (email) {
-            conditions.email = email;
         };
         if (regions) {
             conditions.regions = regions;
@@ -174,8 +160,8 @@ export const updateProfileService = async ({ _id, name, email, regions, distribu
         if (result.matchedCount === 0) {
             response = {
                 status: 0,
-                message: RESPONSE_MESSAGES.NO_DATA_FOUND,
-                statusCode: RESPONSE_CODES.NOT_FOUND,
+                message: RESPONSE_MESSAGES.FAILED_TO_UPDATE_PROFILE,
+                statusCode: RESPONSE_CODES.BAD_REQUEST,
                 data: {}
             };
         } else {

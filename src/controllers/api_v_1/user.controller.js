@@ -1,19 +1,15 @@
 import { RESPONSE_CODES, RESPONSE_MESSAGES } from "../../../config/constants.js";
 import { accessToken, refreshToken } from "../../helpers/jwt.js";
 import { registerService, loginService, updateProfileService, userDetail } from "../../services/api_v_1/user.service.js";
+import { RESPONSE } from "../../helpers/response.js";
 
 export const registerController = async (req, res) => {
     try {
-        let response = {
-            status: 0,
-            message: "",
-            statusCode: RESPONSE_CODES.GET,
-            data: {}
-        };
-        const { name, email, role, regions, distributorId } = req.body;
-        const user_email = await userDetail({ email });
+        let response = RESPONSE;
+        const body = req.body;
+        const user_email = await userDetail({ email: body.email });
         if (!user_email.status) {
-            response = await registerService({ name, email, role, regions, distributorId });
+            response = await registerService(body);
         } else {
             response = {
                 status: 0,
@@ -35,13 +31,8 @@ export const registerController = async (req, res) => {
 
 export const authLoginController = async (req, res) => {
     try {
+        let response = RESPONSE;
         const { email, role } = req.body;
-        let response = {
-            status: 0,
-            message: "",
-            statusCode: RESPONSE_CODES.GET,
-            data: {}
-        };
         let user_email = await userDetail({ email });
         if (user_email.status) {
             const user_info = user_email.data;
@@ -53,9 +44,9 @@ export const authLoginController = async (req, res) => {
                     data: {}
                 };
             } else {
-                const { _id } = user_info;
-                const refresh_token = refreshToken({ userId: _id, type: "refresh" });
-                const access_token = accessToken({ userId: _id, type: "access" });
+                const { _id, email, role } = user_info;
+                const refresh_token = refreshToken({ _id, email, role, type: "refresh" });
+                const access_token = accessToken({ _id, email, role, type: "access" });
                 response = await loginService({ _id, refresh_token });
                 if (response.status) {
                     response.data = {
@@ -86,28 +77,21 @@ export const authLoginController = async (req, res) => {
 
 export const updateProfileController = async (req, res) => {
     try {
-        let response = {
-            status: 0,
-            message: "",
-            statusCode: RESPONSE_CODES.GET,
-            data: {}
-        };
-        const userId = req.userId;
+        let response = RESPONSE;
+        const user = req.user;
         const body = req.body;
-        body._id = userId;
-        let user_info = await userDetail({ type: "limited_detail", _id: userId });
+        body._id = user._id;
+        let user_info = await userDetail({ type: "limited_detail", _id: body._id });
         if (user_info.status) {
-            if (body.email) {
-                let user_info = await userDetail({ email: body.email });
-                if (user_info.status) {
-                    response = {
-                        status: 0,
-                        message: RESPONSE_MESSAGES.EMAIL_ALREADY_REGISTERED,
-                        statusCode: RESPONSE_CODES.ALREADY_EXIST,
-                        data: {}
-                    };
-                    return res.status(response.statusCode).json(response);
+            let user_email = await userDetail({ type: "email_not_equal", email: body.email, _id: body._id });
+            if (user_email.status) {
+                response = {
+                    status: 0,
+                    message: RESPONSE_MESSAGES.EMAIL_ALREADY_REGISTERED,
+                    statusCode: RESPONSE_CODES.ALREADY_EXIST,
+                    data: {}
                 };
+                return res.status(response.statusCode).json(response);
             };
             const userInfo = user_info.data;
             if (userInfo.role === "regionalManager") {
@@ -119,21 +103,6 @@ export const updateProfileController = async (req, res) => {
                 delete body.regions;
             };
             response = await updateProfileService(body);
-            if (response.status) {
-                response = {
-                    status: 1,
-                    message: RESPONSE_MESSAGES.PROFILE_UPDATED,
-                    statusCode: RESPONSE_CODES.GET,
-                    data: {}
-                };
-            } else {
-                response = {
-                    status: 0,
-                    message: RESPONSE_MESSAGES.FAILED_TO_UPDATE_PROFILE,
-                    statusCode: RESPONSE_CODES.BAD_REQUEST,
-                    data: {}
-                };
-            };
         } else {
             response = {
                 status: 0,

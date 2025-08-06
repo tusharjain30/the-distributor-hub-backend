@@ -27,7 +27,23 @@ export const RESPONSE_MESSAGES = {
 	INVALID_ROLE: "Invalid Role",
 	EMAIL_ALREADY_REGISTERED: "Email already registered, please try another email",
 	PROFILE_UPDATED: "Profile updated successfully",
-	FAILED_TO_UPDATE_PROFILE: "Failed to update profile"
+	FAILED_TO_UPDATE_PROFILE: "Failed to update profile",
+	DISTRIBUTOR_ADDED: "Distributor added",
+	FAILED_TO_ADD_DISTRIBUTOR: "Failed to add distributor",
+	DISTRIBUTOR_EMAIL_IS_ALREADY_Exists: "Distributor email is already exists, please try another email",
+	DISTRIBUTOR_PHONE_NUMBER_IS_ALREADY_Exists: "Distributor phone number is already exists, please try another phone number",
+	DISTRIBUTOR_NOT_FOUND: "Distributor not found",
+	DISTRIBUTOR_DETAILS_UPDATED: "Distributor details updated",
+	FAILED_TO_UPDATE_DISTRIBUTOR_DETAILS: "Failed to update distributor details",
+	DISTRIBUTOR_DELETED: "Distributor deleted successfully",
+	FETCHED: "Fetched",
+	CONTACT_ADDED: "Contact Added",
+	FAILED_TO_ADD_CONTACT: "Failed to add contact",
+	CONTACT_EMAIL_IS_ALREADY_Exists: "Contact email is already exists, please try another email",
+	CONTACT_PHONE_NUMBER_IS_ALREADY_Exists: "Contact phone number is already exists, please try another phone number",
+	SUCCESSFULLY_MARKED_CONTACT_AS_PRIMARY: "Successfully marked contact as primary." ,
+	CONTACT_NOT_FOUND: "Contact not found",
+	CONTACT_DELETED: "Contact deleted successfully",
 };
 
 

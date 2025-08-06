@@ -1,7 +1,9 @@
+import moment from 'moment-timezone';
 import { RESPONSE_CODES, RESPONSE_MESSAGES } from '../../config/constants.js';
 import { userDetail } from '../services/api_v_1/user.service.js';
 import { verifyToken } from './jwt.js';
 import { initLogger, logInfo } from './logger.js';
+import { RESPONSE } from "./response.js";
 
 export const authMiddleWare = async (req, res, next) => {
   try {
@@ -23,7 +25,7 @@ export const authMiddleWare = async (req, res, next) => {
       headers: req.headers,
       method: req.method,
       url: req.originalUrl,
-      timestamp: Date.now()
+      timestamp: parseInt(moment().tz(process.env.TIMEZONE).format("x"))
     };
 
     // if ((method === 'POST')) {
@@ -36,15 +38,15 @@ export const authMiddleWare = async (req, res, next) => {
     if (ignoreIndex > -1) {
       logInfo('Activity Log: ', logObj);
       return next();
-    }
+    };
 
     if (!headers.authorization) {
       logInfo('Activity Log: ', logObj);
       return res.status(RESPONSE_CODES.UNAUTHORIZED).json({ error: 'Missing auth token' });
-    }
+    };
 
     logObj.user = verifyToken(headers.authorization);
-    req.userId = logObj.user.userId;
+    req.user = logObj.user;
     logInfo('Activity Log: ', logObj);
     return next();
   }
@@ -53,20 +55,14 @@ export const authMiddleWare = async (req, res, next) => {
   };
 };
 
-export const authorizeMiddleware = (roles = []) => {
+export const authorizeRoles = (role = "") => {
   try {
-    let response = {
-      status: 0,
-      message: "",
-      statusCode: RESPONSE_CODES.GET,
-      data: {}
-    };
-    if (typeof roles === "string") {
-      roles = [roles];
-    };
+    let response = RESPONSE;
 
     return async (req, res, next) => {
-      const user_info = await userDetail({ type: "limited_detail", _id: req.userId });
+      const user = req.user;
+      const payload = { type: "limited_detail", _id: user._id };
+      const user_info = await userDetail(payload);
       if (!user_info.status) {
         response = {
           status: 0,
@@ -76,11 +72,10 @@ export const authorizeMiddleware = (roles = []) => {
         };
         return res.status(RESPONSE_CODES.UNAUTHORIZED).json(response);
       };
-      const { role } = user_info.data;
-      if (roles.length && !roles.includes(role)) {
+      if (user.role !== role || user_info.data.role !== role) {
         response = {
           status: 0,
-          message: `${role} not allowed to access this resouce.`,
+          message: `${user.role} not allowed to access this resource.`,
           statusCode: RESPONSE_CODES.UNAUTHORIZED,
           data: {}
         };
