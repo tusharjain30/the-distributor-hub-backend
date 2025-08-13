@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.post("/", validator(addContactSchema), addContact);
 router.put("/", validator(makeContactPrimarySchema), makeContactPrimary);
-router.get("/", validator(contactListingSchema), contactListing);
+router.get("/", validator(contactListingSchema, "query"), contactListing);
 router.put("/delete", validator(deleteContactSchema), deleteContact);
 
 export default router;

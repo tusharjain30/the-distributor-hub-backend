@@ -87,7 +87,7 @@ export const registerService = async ({ name, email, role, regions, distributorI
         if (result.acknowledged) {
             response = {
                 status: 1,
-                message: RESPONSE_MESSAGES.REGISTER_SUCCESS,
+                message: RESPONSE_MESSAGES.R2EGISTER_SUCCESS,
                 statusCode: RESPONSE_CODES.POST,
                 data: { insertedId: result.insertedId }
             };
@@ -114,7 +114,7 @@ export const loginService = async ({ _id, refresh_token }) => {
     try {
         let response = RESPONSE;
         const currentTime = parseInt(moment().tz(process.env.TIMEZONE).format("x"));
-        const result = await updateOne(COLLECTION_NAMES.USER_COLLECTION, { _id }, { refreshToken: refresh_token, status: 1, updatedAt: currentTime });
+        const result = await updateOne(COLLECTION_NAMES.USER_COLLECTION, { _id }, { $set: { refreshToken: refresh_token, status: 1, updatedAt: currentTime } });
         if (result.matchedCount === 0) {
             response = {
                 status: 0,
@@ -156,7 +156,7 @@ export const updateProfileService = async ({ _id, name, email, regions, distribu
         if (distributorId) {
             conditions.distributorId = distributorId;
         };
-        const result = await updateOne(COLLECTION_NAMES.USER_COLLECTION, { _id: new ObjectId(_id) }, conditions);
+        const result = await updateOne(COLLECTION_NAMES.USER_COLLECTION, { _id: new ObjectId(_id) }, { $set: conditions });
         if (result.matchedCount === 0) {
             response = {
                 status: 0,

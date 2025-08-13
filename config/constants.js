@@ -41,11 +41,22 @@ export const RESPONSE_MESSAGES = {
 	FAILED_TO_ADD_CONTACT: "Failed to add contact",
 	CONTACT_EMAIL_IS_ALREADY_Exists: "Contact email is already exists, please try another email",
 	CONTACT_PHONE_NUMBER_IS_ALREADY_Exists: "Contact phone number is already exists, please try another phone number",
-	SUCCESSFULLY_MARKED_CONTACT_AS_PRIMARY: "Successfully marked contact as primary." ,
+	SUCCESSFULLY_MARKED_CONTACT_AS_PRIMARY: "Successfully marked contact as primary.",
 	CONTACT_NOT_FOUND: "Contact not found",
 	CONTACT_DELETED: "Contact deleted successfully",
+	MAKE_ONE_CONTACT_PRIMARY_BEFORE_DELETING_THE_PRIMARY_CONTACT: "Make one contact primary before deleting the primary contact",
+	NOTE_ADDED: "Note added",
+	FAILED_TO_ADD_NOTE: "Failed to add note",
+	NOTE_DELETED: "Note deleted",
+	NOTE_DETAILS_FETCHED: "Note details fetched",
+	NOTE_NOT_FOUND: "Note not found",
+	ACCOUNT_DETAILS_FETCHED: "Account details fetched",
+	ACCOUNT_NOT_FOUND: "Account not found",
+	ACCOUNT_EMAIL_IS_ALREADY_EXISTS: "Account email is already exists",
+	ACCOUNT_PHONE_IS_ALREADY_EXISTS: "Account phone number is already exists",
+	ACCOUNT_ADDED: "Account added successfully",
+	FAILED_TO_ADD_ACCOUNT: "Failed to add account"
 };
-
 
 export const COLLECTION_NAMES = {
 	USER_COLLECTION: "Users",

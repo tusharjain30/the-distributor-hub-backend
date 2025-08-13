@@ -10,14 +10,16 @@ export const distributorDetail = async ({ type, _id, email, phone, createdBy }) 
         const user_params = {
             isDeleted: false
         };
+
         let project = {};
 
         if (type === 'id') {
             user_params._id = new ObjectId(_id);
+        } else if (type === "createdBy") {
+            user_params.createdBy = new ObjectId(createdBy);
+            user_params._id = new ObjectId(_id);
         } else if (type === 'phone') {
             user_params.phone = phone;
-        } else if (type === "created_by") {
-            user_params.createdBy = createdBy;
         } else if (type === 'limited_detail') {
             user_params._id = new ObjectId(_id);
             project = {
@@ -78,8 +80,14 @@ export const addDistributorService = async ({ createdBy, name, email, phone, web
             region,
             country,
             status,
+            contacts: 0,
+            notes: 0,
+            sales_data: 0,
+            inventory: 0,
+            key_accounts: 0,
             annualRevenue,
             createdBy: new ObjectId(createdBy),
+            updatedBy: null,
             isDeleted: false,
             createdAt: currentTime,
             updatedAt: currentTime
@@ -110,20 +118,23 @@ export const addDistributorService = async ({ createdBy, name, email, phone, web
     };
 };
 
-export const updateDistributorService = async ({ distributorId, name, email, phone, website = "", region, country, status, annualRevenue }) => {
+export const updateDistributorService = async ({ distributorId, name, email, phone, website = "", region, country, status, annualRevenue, updatedBy }) => {
     try {
         let response = RESPONSE;
         const currentTime = parseInt(moment().tz(process.env.TIMEZONE).format("x"));
         const result = await updateOne(COLLECTION_NAMES.DISTRIBUTOR_COLLECTION, { _id: new ObjectId(distributorId) }, {
-            name,
-            email,
-            phone,
-            website,
-            region,
-            country,
-            status,
-            annualRevenue,
-            updatedAt: currentTime
+            $set: {
+                name,
+                email,
+                phone,
+                website,
+                region,
+                country,
+                status,
+                annualRevenue,
+                updatedBy: new ObjectId(updatedBy),
+                updatedAt: currentTime
+            }
         });
         if (result.matchedCount === 0) {
             response = {
@@ -156,8 +167,10 @@ export const deleteDistributorService = async ({ distributorId }) => {
         let response = RESPONSE;
         const currentTime = parseInt(moment().tz(process.env.TIMEZONE).format("x"));
         const result = await updateOne(COLLECTION_NAMES.DISTRIBUTOR_COLLECTION, { _id: new ObjectId(distributorId) }, {
-            isDeleted: true,
-            updatedAt: currentTime
+            $set: {
+                isDeleted: true,
+                updatedAt: currentTime
+            }
         });
         if (result.matchedCount === 0) {
             response = {
@@ -185,27 +198,32 @@ export const deleteDistributorService = async ({ distributorId }) => {
     };
 };
 
-export const distributorListingService = async ({ page, limit, name, email, country, region, status, userId }) => {
+export const distributorListingService = async ({ page, limit, search, region, status, createdBy }) => {
     try {
         let response = RESPONSE;
-        page = parseInt(page) || 1;
-        limit = parseInt(limit) || 10;
-        let conditions = {
-            createdBy: new ObjectId(userId),
+        let filter = {
+            createdBy: new ObjectId(createdBy),
             isDeleted: false
         };
-        if (name) {
-            conditions.name = { $regex: name, $options: "i" };
-        } if (email) {
-            conditions.email = { $regex: email, $options: "i" };
-        } if (country) {
-            conditions.country = { $regex: country, $options: "i" };
-        } if (region) {
-            conditions.region = { $regex: region, $options: "i" };
-        } if (status) {
-            conditions.status = { $regex: status, $options: "i" };
+
+        if (search) {
+            filter.$or = [
+                { name: { $regex: search, $options: "i" } },
+                { email: { $regex: search, $options: "i" } },
+                { region: { $regex: search, $options: "i" } },
+                { country: { $regex: search, $options: "i" } },
+            ];
         };
-        const result = await find(COLLECTION_NAMES.DISTRIBUTOR_COLLECTION, conditions, {
+
+        if (region && region.toLowerCase() !== "all") {
+            filter.region = { $regex: region, $options: "i" };
+        };
+
+        if (status && status.toLowerCase() !== "all") {
+            filter.status = status;
+        };
+
+        const result = await find(COLLECTION_NAMES.DISTRIBUTOR_COLLECTION, filter, {
             name: 1,
             email: 1,
             phone: 1,
@@ -213,13 +231,22 @@ export const distributorListingService = async ({ page, limit, name, email, coun
             region: 1,
             country: 1,
             status: 1,
+            contacts: 1,
+            notes: 1,
+            sales_data: 1,
+            inventory: 1,
+            key_accounts: 1,
             annualRevenue: 1
         }, page, limit);
         response = {
             status: 1,
             message: RESPONSE_MESSAGES.FETCHED,
             statusCode: RESPONSE_CODES.GET,
-            data: [...result, { page, limit }]
+            data: result,
+            pagination: {
+                limit,
+                page
+            }
         };
         return response;
     } catch (error) {

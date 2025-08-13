@@ -1,10 +1,15 @@
 export const validator = (schema, property = "body") => {
     return (req, res, next) => {
-        const { value, error } = schema.validate(req[property] || {})
+        let data = (property === "query" || property === "params") ? { ...req[property] } : req[property];
+        const { value, error } = schema.validate(data || {});
         if (!error) {
-            req[property] = value
+            if (property === "query") {
+                req.validatedQuery = value;
+            } else {
+                req[property] = value;
+            };
             return next()
-        }
+        };
         const errorDetails = error.details.map(detail => ({
             path: detail.path.join('.'),
             message: detail.message

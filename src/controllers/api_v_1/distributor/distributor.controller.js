@@ -1,4 +1,3 @@
-import { ObjectId } from "mongodb";
 import { RESPONSE_CODES, RESPONSE_MESSAGES } from "../../../../config/constants.js";
 import { RESPONSE } from "../../../helpers/response.js";
 import { addDistributorService, deleteDistributorService, distributorDetail, distributorListingService, updateDistributorService } from "../../../services/api_v_1/distributor/distributor.service.js";
@@ -55,17 +54,11 @@ export const updateDistributor = async (req, res) => {
         let response = RESPONSE;
         const user = req.user;
         const body = req.body;
+        body.updatedBy = user._id;
         let user_info = await userDetail({ type: "limited_detail", _id: user._id });
         if (user_info.status) {
-            let distributor_info = await distributorDetail({ type: "id", _id: body.distributorId });
+            let distributor_info = await distributorDetail({ type: "createdBy", _id: body.distributorId, createdBy: user._id });
             if (!distributor_info.status) {
-                response = {
-                    status: 0,
-                    message: RESPONSE_MESSAGES.DISTRIBUTOR_NOT_FOUND,
-                    statusCode: RESPONSE_CODES.NOT_FOUND,
-                    data: {}
-                };
-            } else if (distributor_info.data && (!distributor_info.data.createdBy.equals(new ObjectId(user._id)))) {
                 response = {
                     status: 0,
                     message: RESPONSE_MESSAGES.DISTRIBUTOR_NOT_FOUND,
@@ -119,15 +112,8 @@ export const deleteDistributor = async (req, res) => {
         const body = req.body;
         let user_info = await userDetail({ type: "limited_detail", _id: user._id });
         if (user_info.status) {
-            let distributor_info = await distributorDetail({ type: "id", _id: body.distributorId });
+            let distributor_info = await distributorDetail({ type: "createdBy", _id: body.distributorId, createdBy: user._id });
             if (!distributor_info.status) {
-                response = {
-                    status: 0,
-                    message: RESPONSE_MESSAGES.DISTRIBUTOR_NOT_FOUND,
-                    statusCode: RESPONSE_CODES.NOT_FOUND,
-                    data: {}
-                };
-            } else if (distributor_info.data && (!distributor_info.data.createdBy.equals(new ObjectId(user._id)))) {
                 response = {
                     status: 0,
                     message: RESPONSE_MESSAGES.DISTRIBUTOR_NOT_FOUND,
@@ -162,7 +148,44 @@ export const distributorListing = async (req, res) => {
         const user = req.user;
         let user_info = await userDetail({ type: "limited_detail", _id: user._id });
         if (user_info.status) {
-            response = await distributorListingService({ ...req.query, userId: user._id });
+            response = await distributorListingService({ ...req.validatedQuery, createdBy: user._id });
+        } else {
+            response = {
+                status: 0,
+                message: RESPONSE_MESSAGES.USER_NOT_FOUND,
+                statusCode: RESPONSE_CODES.NOT_FOUND,
+                data: {}
+            };
+        };
+        res.status(response.statusCode).json(response);
+    } catch (error) {
+        res.status(RESPONSE_CODES.ERROR).json({
+            status: 0,
+            message: error.message,
+            status: RESPONSE_CODES.ERROR,
+            data: {}
+        });
+    };
+};
+
+export const getDistributorDetails = async (req, res) => {
+    try {
+        let response = RESPONSE;
+        const user = req.user;
+        const body = req.params;
+        let user_info = await userDetail({ type: "limited_detail", _id: user._id });
+        if (user_info.status) {
+            let distributor_info = await distributorDetail({ type: "createdBy", _id: body.distributorId, createdBy: user._id });
+            if (!distributor_info.status) {
+                response = {
+                    status: 0,
+                    message: RESPONSE_MESSAGES.DISTRIBUTOR_NOT_FOUND,
+                    statusCode: RESPONSE_CODES.NOT_FOUND,
+                    data: {}
+                };
+            } else {
+                response = distributor_info;
+            };
         } else {
             response = {
                 status: 0,

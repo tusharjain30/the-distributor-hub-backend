@@ -1,6 +1,12 @@
 import Joi from "joi";
 
-export const keyAccountSchema = Joi.object({
+export const addKeyAccountSchema = Joi.object({
+    distributorId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).required().messages({
+        'string.base': 'Distributor ID should be a type of text',
+        'string.empty': 'Distributor ID cannot be empty',
+        'string.pattern.base': 'Distributor ID must be a valid MongoDB ObjectId',
+        'any.required': 'Distributor ID is a required field',
+    }),
     contactName: Joi.string().trim().min(2).max(30).required().messages({
         'string.base': 'Contact name should be a type of text',
         'string.empty': 'Contact name cannot be empty',
@@ -38,5 +44,21 @@ export const keyAccountSchema = Joi.object({
         'string.base': 'Status should be a type of text',
         'any.only': 'Status must be one of {{#valids}}',
         'any.required': 'Status is a required field',
+    }),
+    region: Joi.string().valid("1", "2", "3", "4", "5").optional().default(null).messages({
+        'array.base': 'Regions must be a type of strings.',
+        'any.only': 'Regions must be one of {{#valids}}',
+    }),
+    adoptionLevel: Joi.string().valid("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12").optional().default(null).messages({
+        'string.base': 'Adoption level should be a type of text',
+        'string.empty': 'Adoption level cannot be empty.',
+        'any.only': 'Adoption level must be one of {{#valids}}',
+    }),
+    lastContact: Joi.string().trim().optional().default(null).messages({
+        'string.base': 'Last contact should be a type of text',
+        'string.empty': 'Last contact  cannot be empty',
+    }),
+    distributor: Joi.string().valid("1", "2", "3", "4", "5").optional().default(null).messages({
+        'any.only': 'Distributor must be one of {{#valids}}'
     }),
 });
