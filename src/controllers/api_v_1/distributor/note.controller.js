@@ -4,7 +4,7 @@ import { distributorDetail } from "../../../services/api_v_1/distributor/distrib
 import { addNoteService, deleteNoteService, noteDetail, noteListingService } from "../../../services/api_v_1/distributor/note.service.js";
 import { userDetail } from "../../../services/api_v_1/user.service.js";
 
-export const addNote = async (req, res) => {
+export const addNoteController = async (req, res) => {
     try {
         let response = RESPONSE;
         const user = req.user;
@@ -42,7 +42,7 @@ export const addNote = async (req, res) => {
     };
 };
 
-export const deleteNote = async (req, res) => {
+export const deleteNoteController = async (req, res) => {
     try {
         let response = RESPONSE;
         const user = req.user;
@@ -90,7 +90,7 @@ export const deleteNote = async (req, res) => {
     };
 };
 
-export const noteListing = async (req, res) => {
+export const noteListingController = async (req, res) => {
     try {
         let response = RESPONSE;
         const user = req.user;

@@ -3,7 +3,7 @@ import { RESPONSE } from "../../../helpers/response.js";
 import { addDistributorService, deleteDistributorService, distributorDetail, distributorListingService, updateDistributorService } from "../../../services/api_v_1/distributor/distributor.service.js";
 import { userDetail } from "../../../services/api_v_1/user.service.js";
 
-export const addDistributor = async (req, res) => {
+export const addDistributorController = async (req, res) => {
     try {
         let response = RESPONSE;
         const user = req.user;
@@ -49,7 +49,7 @@ export const addDistributor = async (req, res) => {
     };
 };
 
-export const updateDistributor = async (req, res) => {
+export const updateDistributorController = async (req, res) => {
     try {
         let response = RESPONSE;
         const user = req.user;
@@ -105,7 +105,7 @@ export const updateDistributor = async (req, res) => {
     };
 };
 
-export const deleteDistributor = async (req, res) => {
+export const deleteDistributorController = async (req, res) => {
     try {
         let response = RESPONSE;
         const user = req.user;
@@ -142,7 +142,7 @@ export const deleteDistributor = async (req, res) => {
     };
 };
 
-export const distributorListing = async (req, res) => {
+export const distributorListingController = async (req, res) => {
     try {
         let response = RESPONSE;
         const user = req.user;
@@ -168,7 +168,7 @@ export const distributorListing = async (req, res) => {
     };
 };
 
-export const getDistributorDetails = async (req, res) => {
+export const getDistributorDetailsController = async (req, res) => {
     try {
         let response = RESPONSE;
         const user = req.user;

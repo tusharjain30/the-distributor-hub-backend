@@ -4,7 +4,7 @@ import { addContactService, contactDetail, deleteContactService, contactListingS
 import { distributorDetail } from "../../../services/api_v_1/distributor/distributor.service.js";
 import { userDetail } from "../../../services/api_v_1/user.service.js";
 
-export const addContact = async (req, res) => {
+export const addContactController = async (req, res) => {
     try {
         let response = RESPONSE;
         const user = req.user;
@@ -60,7 +60,7 @@ export const addContact = async (req, res) => {
     };
 };
 
-export const makeContactPrimary = async (req, res) => {
+export const makeContactPrimaryController = async (req, res) => {
     try {
         let response = RESPONSE;
         const user = req.user;
@@ -108,7 +108,7 @@ export const makeContactPrimary = async (req, res) => {
     };
 };
 
-export const contactListing = async (req, res) => {
+export const contactListingController = async (req, res) => {
     try {
         let response = RESPONSE;
         const user = req.user;
@@ -146,7 +146,7 @@ export const contactListing = async (req, res) => {
     };
 };
 
-export const deleteContact = async (req, res) => {
+export const deleteContactController = async (req, res) => {
     try {
         let response = RESPONSE;
         const user = req.user;

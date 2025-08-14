@@ -55,7 +55,10 @@ export const RESPONSE_MESSAGES = {
 	ACCOUNT_EMAIL_IS_ALREADY_EXISTS: "Account email is already exists",
 	ACCOUNT_PHONE_IS_ALREADY_EXISTS: "Account phone number is already exists",
 	ACCOUNT_ADDED: "Account added successfully",
-	FAILED_TO_ADD_ACCOUNT: "Failed to add account"
+	FAILED_TO_ADD_ACCOUNT: "Failed to add account",
+	ACCOUNT_DELETED: "Account deleted successfully",
+	ACCOUNT_DETAILS_UPDATED: "Account details updated",
+	ACCOUNT_CONTACT_DETAILS_FETCHED: "Account contact details fetched"
 };
 
 export const COLLECTION_NAMES = {
@@ -64,6 +67,8 @@ export const COLLECTION_NAMES = {
 	DISTRIBUTOR_CONTACT_COLLECTION: "Distributor_Contacts",
 	DISTRIBUTOR_NOTE_COLLECTION: "Distributor_Notes",
 	DISTRIBUTOR_KEY_ACCOUNT_COLLECTION: "Distributor_Key_Accounts",
+	KEY_ACCOUNT_CONTACT_COLLECTION: "Key_Account_Contacts",
+	KEY_ACCOUNT_NOTE_COLLECTION: "Key_Account_Notes",
 	DISTRIBUTOR_INVENTORY_COLLECTION: "Distributor_Inventory",
 	DISTRIBUTOR_SALES_DATA_COLLECTION: "Distributor_Sales_Data",
 };
