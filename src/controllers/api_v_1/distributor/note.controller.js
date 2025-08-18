@@ -1,8 +1,8 @@
 import { RESPONSE_CODES, RESPONSE_MESSAGES } from "../../../../config/constants.js"
 import { RESPONSE } from "../../../helpers/response.js";
-import { distributorDetail } from "../../../services/api_v_1/distributor/distributor.service.js";
-import { addNoteService, deleteNoteService, noteDetail, noteListingService } from "../../../services/api_v_1/distributor/note.service.js";
-import { userDetail } from "../../../services/api_v_1/user.service.js";
+import { getDistributorDetails } from "../../../services/api_v_1/distributor/distributor.service.js";
+import { addDistributorNoteService, deleteDistributorNoteService, distributorNoteListingService, getDistributorNoteDetails } from "../../../services/api_v_1/distributor/note.service.js";
+import { getUserDetails } from "../../../services/api_v_1/user.service.js";
 
 export const addNoteController = async (req, res) => {
     try {
@@ -10,11 +10,11 @@ export const addNoteController = async (req, res) => {
         const user = req.user;
         const body = req.body;
         body.createdBy = user._id;
-        let user_info = await userDetail({ type: "limited_detail", _id: body.createdBy });
+        let user_info = await getUserDetails({ queryType: "limited_detail", userId: body.createdBy });
         if (user_info.status) {
-            let distributor_info = await distributorDetail({ type: "createdBy", _id: body.distributorId, createdBy: body.createdBy });
+            let distributor_info = await getDistributorDetails({ queryType: "createdBy", _id: body.distributorId, createdBy: body.createdBy });
             if (distributor_info.status) {
-                response = await addNoteService(body);
+                response = await addDistributorNoteService(body);
             } else {
                 response = {
                     status: 0,
@@ -48,13 +48,13 @@ export const deleteNoteController = async (req, res) => {
         const user = req.user;
         const body = req.body;
         body.createdBy = user._id;
-        let user_info = await userDetail({ type: "limited_detail", _id: body.createdBy });
+        let user_info = await getUserDetails({ queryType: "limited_detail", userId: body.createdBy });
         if (user_info.status) {
-            let distributor_info = await distributorDetail({ type: "createdBy", _id: body.distributorId, createdBy: body.createdBy });
+            let distributor_info = await getDistributorDetails({ queryType: "createdBy", _id: body.distributorId, createdBy: body.createdBy });
             if (distributor_info.status) {
-                response = await noteDetail({ type: "createdBy", distributorId: body.distributorId, createdBy: body.createdBy, _id: body.noteId });
+                response = await getDistributorNoteDetails({ queryType: "createdBy", distributorId: body.distributorId, createdBy: body.createdBy, _id: body.noteId });
                 if (response.status) {
-                    response = await deleteNoteService(body);
+                    response = await deleteDistributorNoteService(body);
                 } else {
                     response = {
                         status: 0,
@@ -96,11 +96,11 @@ export const noteListingController = async (req, res) => {
         const user = req.user;
         const body = req.validatedQuery;
         body.createdBy = user._id;
-        let user_info = await userDetail({ type: "limited_detail", _id: body.createdBy });
+        let user_info = await getUserDetails({ queryType: "limited_detail", userId: body.createdBy });
         if (user_info.status) {
-            let distributor_info = await distributorDetail({ type: "createdBy", _id: body.distributorId, createdBy: body.createdBy });
+            let distributor_info = await getDistributorDetails({ queryType: "createdBy", _id: body.distributorId, createdBy: body.createdBy });
             if (distributor_info.status) {
-                response = await noteListingService(body);
+                response = await distributorNoteListingService(body);
             } else {
                 response = {
                     status: 0,

@@ -1,6 +1,6 @@
 import moment from 'moment-timezone';
 import { RESPONSE_CODES, RESPONSE_MESSAGES } from '../../config/constants.js';
-import { userDetail } from '../services/api_v_1/user.service.js';
+import { getUserDetails } from '../services/api_v_1/user.service.js';
 import { verifyToken } from './jwt.js';
 import { initLogger, logInfo } from './logger.js';
 import { RESPONSE } from "./response.js";
@@ -9,8 +9,8 @@ export const authMiddleWare = async (req, res, next) => {
   try {
     initLogger();
     const ignorePaths = [
-      '/api_v_1/users/register',
-      '/api_v_1/users/login',
+      '/api_v_1/user/register',
+      '/api_v_1/user/login',
     ];
 
     const {
@@ -61,8 +61,8 @@ export const authorizeRoles = (role = "") => {
 
     return async (req, res, next) => {
       const user = req.user;
-      const payload = { type: "limited_detail", _id: user._id };
-      const user_info = await userDetail(payload);
+      const payload = { queryType: "limited_detail", userId: user._id };
+      const user_info = await getUserDetails(payload);
       if (!user_info.status) {
         response = {
           status: 0,

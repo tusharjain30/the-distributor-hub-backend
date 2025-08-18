@@ -9,12 +9,12 @@ import AccountNote from "./api_v_1/distributor/keyAccount/note.routes.js";
 import { authorizeRoles } from "../helpers/middlewares.js";
 const router = express.Router();
 
-router.use("/users", User);
+router.use("/user", User);
 router.use("/distributor", authorizeRoles("manufacturer"), Distributor);
-router.use("/distributor/contact", authorizeRoles("manufacturer"), Contact);
-router.use("/distributor/note", authorizeRoles("manufacturer"), Note);
+router.use("/distributorContact", authorizeRoles("manufacturer"), Contact);
+router.use("/distributorNote", authorizeRoles("manufacturer"), Note);
 router.use("/account", authorizeRoles("manufacturer"), Account);
-router.use("/account/contact", authorizeRoles("manufacturer"), AccountContact);
-router.use("/account/note", authorizeRoles("manufacturer"), AccountNote);
+router.use("/accountcontact", authorizeRoles("manufacturer"), AccountContact);
+router.use("/accountNote", authorizeRoles("manufacturer"), AccountNote);
 
 export default router; 

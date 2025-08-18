@@ -21,7 +21,7 @@ export const addDistributorSchema = Joi.object({
         'string.pattern.base': 'Phone number must be in the format XXX-XXX-XXXX (e.g., 555-123-4567).',
         'any.required': 'Phone is required.'
     }),
-    website: Joi.string().uri().allow('').messages({
+    website: Joi.string().uri().allow('').default("").messages({
         'string.uri': 'Please enter a valid website URL.',
     }),
     region: Joi.string().trim().min(2).max(50).required().messages({
@@ -38,10 +38,11 @@ export const addDistributorSchema = Joi.object({
         'string.max': 'Country should have a maximum length of {#limit}',
         'any.required': 'Country is required.'
     }),
-    status: Joi.string().trim().valid("active", "inactive", "pending").required().messages({
-        'string.base': 'Status should be a type of text',
-        'any.only': 'Status must be one of {{#valids}}',
-        'any.required': 'Status is a required field',
+    statusId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).required().messages({
+        'string.base': 'Status ID should be a type of text',
+        'string.empty': 'Status ID cannot be empty',
+        'string.pattern.base': 'Status ID must be a valid MongoDB ObjectId',
+        'any.required': 'Status ID is a required field',
     }),
     annualRevenue: Joi.number().positive().precision(2).required().messages({
         'number.base': 'Annual revenue must be a valid number.',
@@ -78,7 +79,7 @@ export const updateDistributorSchema = Joi.object({
         'string.pattern.base': 'Phone number must be in the format XXX-XXX-XXXX (e.g., 555-123-4567).',
         'any.required': 'Phone is required.'
     }),
-    website: Joi.string().uri().allow('').messages({
+    website: Joi.string().uri().allow('').default("").messages({
         'string.uri': 'Please enter a valid website URL.',
     }),
     region: Joi.string().trim().min(2).max(50).required().messages({
@@ -95,11 +96,7 @@ export const updateDistributorSchema = Joi.object({
         'string.max': 'Country should have a maximum length of {#limit}',
         'any.required': 'Country is required.'
     }),
-    status: Joi.string().trim().valid("active", "inactive", "pending").required().messages({
-        'string.base': 'Status should be a type of text',
-        'any.only': 'Status must be one of {{#valids}}',
-        'any.required': 'Status is a required field',
-    }),
+
     annualRevenue: Joi.number().positive().precision(2).required().messages({
         'number.base': 'Annual revenue must be a valid number.',
         'number.positive': 'Annual revenue must be a positive number.',
@@ -121,11 +118,27 @@ export const distributorListingQuerySchema = Joi.object({
     search: Joi.string().trim().allow("").messages({
         "string.base": "Search must be a string"
     }),
-    region: Joi.string().trim().allow("all", "").messages({
-        "string.base": "Region must be a string"
+    regionId: Joi.alternatives().try(
+        Joi.string().valid("all").messages({
+            "any.only": "Region ID must be 'all' or a valid ObjectId",
+        }),
+        Joi.string().pattern(/^[0-9a-fA-F]{24}$/).messages({
+            "string.pattern.base": "Region ID must be a valid MongoDB ObjectId"
+        })
+    ).optional().messages({
+        'string.empty': 'Region ID cannot be empty',
+        "alternatives.match": "Region ID must be either 'all' or a valid MongoDB ObjectId"
     }),
-    status: Joi.string().valid("active", "inactive", "pending", "all").messages({
-        "any.only": "Status must be one of 'active', 'inactive', 'pending',  or 'all'"
+    statusId: Joi.alternatives().try(
+        Joi.string().valid("all").messages({
+            "any.only": "Status ID must be 'all' or a valid ObjectId",
+        }),
+        Joi.string().pattern(/^[0-9a-fA-F]{24}$/).messages({
+            "string.pattern.base": "Status ID must be a valid MongoDB ObjectId"
+        })
+    ).optional().messages({
+        'string.empty': 'Status ID cannot be empty',
+        "alternatives.match": "Status ID must be either 'all' or a valid MongoDB ObjectId"
     }),
     page: Joi.number().integer().min(1).default(1).messages({
         'number.base': 'Page must be a number.',

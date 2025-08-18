@@ -1,25 +1,38 @@
 import { db } from "../src/helpers/db.js";
 
-export const findOne = (COLLECTION_NAME, query, obj = {}) => {
-    return db.collection(COLLECTION_NAME).findOne({ ...query, isDeleted: false }, { projection: obj });
+export const findOneDocument = (collectionName, filter, projection = {}) => {
+    return db.collection(collectionName).findOne(
+        { ...filter, isDeleted: false },
+        { projection }
+    );
 };
 
-export const insertOne = (COLLECTION_NAME, data) => {
-    return db.collection(COLLECTION_NAME).insertOne(data);
+export const insertDocument = (collectionName, data) => {
+    return db.collection(collectionName).insertOne(data);
 };
 
-export const updateOne = (COLLECTION_NAME, filter, update) => {
-    return db.collection(COLLECTION_NAME).updateOne({ ...filter, isDeleted: false }, update);
+export const updateDocument = (collectionName, filter, update) => {
+    return db.collection(collectionName).updateOne(
+        { ...filter, isDeleted: false },
+        update
+    );
 };
 
-export const updateMany = (COLLECTION_NAME, filter, update) => {
-    return db.collection(COLLECTION_NAME).updateMany({ ...filter, isDeleted: false }, update);
+export const updateDocuments = (collectionName, filter, update) => {
+    return db.collection(collectionName).updateMany(
+        { ...filter, isDeleted: false },
+        update
+    );
 };
 
-export const find = (COLLECTION_NAME, query, obj = {}, page = 1, limit = 100) => {
-    return db.collection(COLLECTION_NAME).find({ ...query, isDeleted: false }, { projection: obj }).skip((page - 1) * limit).limit(limit).toArray();;
+export const findDocuments = (collectionName, filter, projection = {}, page = 1, limit = 100) => {
+    return db.collection(collectionName)
+        .find({ ...filter, isDeleted: false }, { projection })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .toArray();
 };
 
-export const aggregate = (COLLECTION_NAME, pipeline) => {
-    return db.collection(COLLECTION_NAME).aggregate(pipeline).toArray();
+export const aggregateDocuments = (collectionName, pipeline) => {
+    return db.collection(collectionName).aggregate(pipeline).toArray();
 };

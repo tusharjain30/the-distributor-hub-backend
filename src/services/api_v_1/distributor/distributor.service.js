@@ -1,58 +1,98 @@
 import moment from "moment-timezone";
 import { ObjectId } from "mongodb";
 import { COLLECTION_NAMES, RESPONSE_CODES, RESPONSE_MESSAGES } from "../../../../config/constants.js";
-import { find, findOne, insertOne, updateOne } from "../../../../config/dbMethods.js";
+import { aggregateDocuments, findDocuments, findOneDocument, insertDocument, updateDocument } from "../../../../config/dbMethods.js";
 import { RESPONSE } from "../../../helpers/response.js";
 
-export const distributorDetail = async ({ type, _id, email, phone, createdBy }) => {
+export const getDistributorDetails = async ({ queryType, _id, email, phone, createdBy, statusId }) => {
     try {
         let response = RESPONSE;
-        const user_params = {
+        const queryFilter = {
             isDeleted: false
         };
 
-        let project = {};
-
-        if (type === 'id') {
-            user_params._id = new ObjectId(_id);
-        } else if (type === "createdBy") {
-            user_params.createdBy = new ObjectId(createdBy);
-            user_params._id = new ObjectId(_id);
-        } else if (type === 'phone') {
-            user_params.phone = phone;
-        } else if (type === 'limited_detail') {
-            user_params._id = new ObjectId(_id);
-            project = {
-                _id: 1,
-                name: 1,
-                phone: 1,
-                email: 1,
-                website: 1,
-                country: 1,
-                status: 1,
-                region: 1
-            }
-        } else if (type === "email_not_equal") {
-            user_params.email = email.toLowerCase();
-            user_params._id = { $ne: new ObjectId(_id) };
-        } else if (type === "phone_not_equal") {
-            user_params.phone = phone;
-            user_params._id = { $ne: new ObjectId(_id) };
+        if (queryType === 'id') {
+            queryFilter._id = new ObjectId(_id);
+        } else if (queryType === "createdBy") {
+            queryFilter.createdBy = new ObjectId(createdBy);
+            queryFilter._id = new ObjectId(_id);
+        } else if (queryType === "statusId") {
+            queryFilter.statusId = new ObjectId(statusId);
+        } else if (queryType === 'phone') {
+            queryFilter.phone = phone;
+        } else if (queryType === 'limited_detail') {
+            queryFilter._id = new ObjectId(_id);
+        } else if (queryType === "emailNotEqual") {
+            queryFilter.email = email.toLowerCase();
+            queryFilter._id = { $ne: new ObjectId(_id) };
+        } else if (queryType === "phoneNotEqual") {
+            queryFilter.phone = phone;
+            queryFilter._id = { $ne: new ObjectId(_id) };
         } else {
-            user_params.email = email.toLowerCase();
+            queryFilter.email = email.toLowerCase();
         };
-        const user_details = await findOne(COLLECTION_NAMES.DISTRIBUTOR_COLLECTION, user_params, project);
-        if (user_details) {
+        const distributor_details = await aggregateDocuments(COLLECTION_NAMES.DISTRIBUTORS, [
+            {
+                $match: queryFilter
+            },
+            {
+                $lookup: {
+                    from: COLLECTION_NAMES.STATUS,
+                    let: { targetId: "$statusId" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [{ $eq: ["$_id", "$$targetId"] }]
+                                }
+                            }
+                        },
+                        {
+                            $project: {
+                                _id: 0,
+                                status: 1
+                            }
+                        }
+                    ],
+                    as: "status"
+                }
+            },
+            {
+                $unwind: {
+                    path: "$status",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $project: {
+                    name: 1,
+                    email: 1,
+                    phone: 1,
+                    website: 1,
+                    region: 1,
+                    country: 1,
+                    status: "$status.status",
+                    contacts: 1,
+                    notes: 1,
+                    sales_data: 1,
+                    inventory: 1,
+                    key_accounts: 1,
+                    annualRevenue: 1
+                }
+            }
+        ]);
+
+        if (distributor_details.length !== 0) {
             response = {
                 status: 1,
-                message: RESPONSE_MESSAGES.USER_DETAIL,
+                message: RESPONSE_MESSAGES.DISTRIBUTOR_FETCH_SUCCESS,
                 statusCode: RESPONSE_CODES.GET,
-                data: user_details
+                data: distributor_details
             };
         } else {
             response = {
                 status: 0,
-                message: RESPONSE_MESSAGES.NO_DATA_FOUND,
+                message: RESPONSE_MESSAGES.DATA_NOT_FOUND,
                 statusCode: RESPONSE_CODES.NOT_FOUND,
                 data: {}
             };
@@ -68,18 +108,18 @@ export const distributorDetail = async ({ type, _id, email, phone, createdBy }) 
     };
 };
 
-export const addDistributorService = async ({ createdBy, name, email, phone, website = "", region, country, status, annualRevenue }) => {
+export const addDistributorService = async ({ createdBy, name, email, phone, website = "", region, country, statusId, annualRevenue }) => {
     try {
         let response = RESPONSE;
         const currentTime = parseInt(moment().tz(process.env.TIMEZONE).format("x"));
-        const result = await insertOne(COLLECTION_NAMES.DISTRIBUTOR_COLLECTION, {
+        const result = await insertDocument(COLLECTION_NAMES.DISTRIBUTORS, {
             name,
             email,
             phone,
             website,
             region,
             country,
-            status,
+            statusId: new ObjectId(statusId),
             contacts: 0,
             notes: 0,
             sales_data: 0,
@@ -95,14 +135,14 @@ export const addDistributorService = async ({ createdBy, name, email, phone, web
         if (result.acknowledged) {
             response = {
                 status: 1,
-                message: RESPONSE_MESSAGES.DISTRIBUTOR_ADDED,
+                message: RESPONSE_MESSAGES.DISTRIBUTOR_ADD_SUCCESS,
                 statusCode: RESPONSE_CODES.POST,
                 data: { insertedId: result.insertedId }
             };
         } else {
             response = {
                 status: 0,
-                message: RESPONSE_MESSAGES.FAILED_TO_ADD_DISTRIBUTOR,
+                message: RESPONSE_MESSAGES.DISTRIBUTOR_ADD_FAILED,
                 statusCode: RESPONSE_CODES.BAD_REQUEST,
                 data: {}
             };
@@ -118,11 +158,11 @@ export const addDistributorService = async ({ createdBy, name, email, phone, web
     };
 };
 
-export const updateDistributorService = async ({ distributorId, name, email, phone, website = "", region, country, status, annualRevenue, updatedBy }) => {
+export const updateDistributorService = async ({ distributorId, name, email, phone, website = "", region, country, statusId, annualRevenue, updatedBy }) => {
     try {
         let response = RESPONSE;
         const currentTime = parseInt(moment().tz(process.env.TIMEZONE).format("x"));
-        const result = await updateOne(COLLECTION_NAMES.DISTRIBUTOR_COLLECTION, { _id: new ObjectId(distributorId) }, {
+        const result = await updateDocument(COLLECTION_NAMES.DISTRIBUTORS, { _id: new ObjectId(distributorId) }, {
             $set: {
                 name,
                 email,
@@ -130,7 +170,7 @@ export const updateDistributorService = async ({ distributorId, name, email, pho
                 website,
                 region,
                 country,
-                status,
+                statusId: new ObjectId(statusId),
                 annualRevenue,
                 updatedBy: new ObjectId(updatedBy),
                 updatedAt: currentTime
@@ -139,14 +179,14 @@ export const updateDistributorService = async ({ distributorId, name, email, pho
         if (result.matchedCount === 0) {
             response = {
                 status: 0,
-                message: RESPONSE_MESSAGES.NO_DATA_FOUND,
+                message: RESPONSE_MESSAGES.DATA_NOT_FOUND,
                 statusCode: RESPONSE_CODES.NOT_FOUND,
                 data: {}
             };
         } else {
             response = {
                 status: 1,
-                message: RESPONSE_MESSAGES.DISTRIBUTOR_DETAILS_UPDATED,
+                message: RESPONSE_MESSAGES.DISTRIBUTOR_UPDATE_SUCCESS,
                 statusCode: RESPONSE_CODES.GET,
                 data: {}
             };
@@ -166,7 +206,7 @@ export const deleteDistributorService = async ({ distributorId }) => {
     try {
         let response = RESPONSE;
         const currentTime = parseInt(moment().tz(process.env.TIMEZONE).format("x"));
-        const result = await updateOne(COLLECTION_NAMES.DISTRIBUTOR_COLLECTION, { _id: new ObjectId(distributorId) }, {
+        const result = await updateDocument(COLLECTION_NAMES.DISTRIBUTORS, { _id: new ObjectId(distributorId) }, {
             $set: {
                 isDeleted: true,
                 updatedAt: currentTime
@@ -175,14 +215,14 @@ export const deleteDistributorService = async ({ distributorId }) => {
         if (result.matchedCount === 0) {
             response = {
                 status: 0,
-                message: RESPONSE_MESSAGES.NO_DATA_FOUND,
+                message: RESPONSE_MESSAGES.DATA_NOT_FOUND,
                 statusCode: RESPONSE_CODES.NOT_FOUND,
                 data: {}
             };
         } else {
             response = {
                 status: 1,
-                message: RESPONSE_MESSAGES.DISTRIBUTOR_DELETED,
+                message: RESPONSE_MESSAGES.DISTRIBUTOR_DELETE_SUCCESS,
                 statusCode: RESPONSE_CODES.GET,
                 data: {}
             };
@@ -198,13 +238,14 @@ export const deleteDistributorService = async ({ distributorId }) => {
     };
 };
 
-export const distributorListingService = async ({ page, limit, search, region, status, createdBy }) => {
+export const distributorListingService = async ({ page, limit, search, regionId, statusId, createdBy }) => {
     try {
         let response = RESPONSE;
         let filter = {
             createdBy: new ObjectId(createdBy),
             isDeleted: false
         };
+        const skip = (page - 1) * limit;
 
         if (search) {
             filter.$or = [
@@ -215,32 +256,79 @@ export const distributorListingService = async ({ page, limit, search, region, s
             ];
         };
 
-        if (region && region.toLowerCase() !== "all") {
-            filter.region = { $regex: region, $options: "i" };
+        if (regionId && regionId !== "all") {
+            const result = await findOneDocument(COLLECTION_NAMES.REGIONS, {
+                _id: new ObjectId(regionId),
+                isDeleted: false
+            });
+            if (result) {
+                filter.region = { $regex: result.region, $options: "i" };
+            } else {
+                filter.region = "";
+            };
         };
 
-        if (status && status.toLowerCase() !== "all") {
-            filter.status = status;
+        if (statusId && statusId.toLowerCase() !== "all") {
+            filter.statusId = new ObjectId(statusId);
         };
+        const pipeline = [
+            {
+                $match: filter
+            },
+            {
+                $lookup: {
+                    from: COLLECTION_NAMES.STATUS,
+                    let: { targetId: "$statusId" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [{ $eq: ["$_id", "$$targetId"] }]
+                                }
+                            }
+                        },
+                        {
+                            $project: {
+                                _id: 0,
+                                status: 1
+                            }
+                        }
+                    ],
+                    as: "status"
+                },
+            },
+            {
+                $unwind: {
+                    path: "$status",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $project: {
+                    name: 1,
+                    email: 1,
+                    phone: 1,
+                    website: 1,
+                    region: 1,
+                    country: 1,
+                    status: "$status.status",
+                    contacts: 1,
+                    notes: 1,
+                    sales_data: 1,
+                    inventory: 1,
+                    key_accounts: 1,
+                    annualRevenue: 1
+                }
+            },
+            { $skip: skip },
+            { $limit: limit }
+        ];
 
-        const result = await find(COLLECTION_NAMES.DISTRIBUTOR_COLLECTION, filter, {
-            name: 1,
-            email: 1,
-            phone: 1,
-            website: 1,
-            region: 1,
-            country: 1,
-            status: 1,
-            contacts: 1,
-            notes: 1,
-            sales_data: 1,
-            inventory: 1,
-            key_accounts: 1,
-            annualRevenue: 1
-        }, page, limit);
+        const result = await aggregateDocuments(COLLECTION_NAMES.DISTRIBUTORS, pipeline);
+
         response = {
             status: 1,
-            message: RESPONSE_MESSAGES.FETCHED,
+            message: RESPONSE_MESSAGES.FETCH_SUCCESS,
             statusCode: RESPONSE_CODES.GET,
             data: result,
             pagination: {
@@ -258,3 +346,4 @@ export const distributorListingService = async ({ page, limit, search, region, s
         };
     };
 };
+

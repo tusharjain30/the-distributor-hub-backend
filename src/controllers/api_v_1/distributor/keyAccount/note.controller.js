@@ -1,19 +1,19 @@
 import { RESPONSE_CODES } from "../../../../../config/constants.js";
 import { RESPONSE } from "../../../../helpers/response.js";
-import { distributorDetail } from "../../../../services/api_v_1/distributor/distributor.service.js";
-import { keyAccountDetail } from "../../../../services/api_v_1/distributor/keyAccount/account.service.js";
-import { addAccountNoteService } from "../../../../services/api_v_1/distributor/keyAccount/note.service.js";
-import { userDetail } from "../../../../services/api_v_1/user.service.js";
+import { getDistributorDetails } from "../../../../services/api_v_1/distributor/distributor.service.js";
+import { getDistributorkeyAccountDetails } from "../../../../services/api_v_1/distributor/keyAccount/account.service.js";
+import { addKeyAccountNoteService } from "../../../../services/api_v_1/distributor/keyAccount/note.service.js";
+import { getUserDetails } from "../../../../services/api_v_1/user.service.js";
 
-export const addAccountNote = async (req, res) => {
+export const addKeyAccountNoteController = async (req, res) => {
     try {
         let response = RESPONSE;
         const user = req.user;
         const body = req.body;
         body.createdBy = user._id;
-        let user_info = await userDetail({ type: "limited_detail", _id: body.createdBy });
+        let user_info = await getUserDetails({ queryType: "limited_detail", userId: body.createdBy });
         if (user_info.status) {
-            let distributor_info = await distributorDetail({ type: "createdBy", _id: body.distributorId, createdBy: user._id });
+            let distributor_info = await getDistributorDetails({ queryType: "createdBy", _id: body.distributorId, createdBy: user._id });
             if (!distributor_info.status) {
                 response = {
                     status: 0,
@@ -22,9 +22,9 @@ export const addAccountNote = async (req, res) => {
                     data: {}
                 };
             } else {
-                let account_info = await keyAccountDetail({ type: "distributorId_createdBy", _id: body.accountId, distributorId: body.distributorId, createdBy: body.createdBy });
+                let account_info = await getDistributorkeyAccountDetails({ queryType: "distributorId_createdBy", _id: body.accountId, distributorId: body.distributorId, createdBy: body.createdBy });
                 if (account_info.status) {
-                    response = await addAccountNoteService(body);
+                    response = await addKeyAccountNoteService(body);
                 } else {
                     response = {
                         status: 0,
@@ -53,15 +53,15 @@ export const addAccountNote = async (req, res) => {
     };
 };
 
-export const deleteAccountNote = async (req, res) => {
+export const deleteKeyAccountNoteController = async (req, res) => {
     try {
         let response = RESPONSE;
         const user = req.user;
         const body = req.body;
         body.createdBy = user._id;
-        let user_info = await userDetail({ type: "limited_detail", _id: body.createdBy });
+        let user_info = await getUserDetails({ queryType: "limited_detail", userId: body.createdBy });
         if (user_info.status) {
-            let distributor_info = await distributorDetail({ type: "createdBy", _id: body.distributorId, createdBy: user._id });
+            let distributor_info = await getDistributorDetails({ queryType: "createdBy", _id: body.distributorId, createdBy: user._id });
             if (!distributor_info.status) {
                 response = {
                     status: 0,
@@ -70,7 +70,7 @@ export const deleteAccountNote = async (req, res) => {
                     data: {}
                 };
             } else {
-                let account_info = await keyAccountDetail({ type: "distributorId_createdBy", _id: body.accountId, distributorId: body.distributorId, createdBy: body.createdBy });
+                let account_info = await getDistributorkeyAccountDetails({ queryType: "distributorId_createdBy", _id: body.accountId, distributorId: body.distributorId, createdBy: body.createdBy });
                 if (account_info.status) {
                     //.. delete service
                 } else {

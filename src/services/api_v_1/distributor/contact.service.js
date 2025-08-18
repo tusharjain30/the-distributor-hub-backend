@@ -1,57 +1,59 @@
 import { ObjectId } from "mongodb";
 import { COLLECTION_NAMES, RESPONSE_CODES, RESPONSE_MESSAGES } from "../../../../config/constants.js";
-import { find, findOne, insertOne, updateMany, updateOne } from "../../../../config/dbMethods.js";
+import { findDocuments, findOneDocument, insertDocument, updateDocument, updateDocuments } from "../../../../config/dbMethods.js";
 import { RESPONSE } from "../../../helpers/response.js";
 import moment from "moment-timezone";
 
-export const contactDetail = async ({ type, _id, email, phone, createdBy, distributorId }) => {
+export const getDistributorContactDetails = async ({ queryType, _id, email, phone, createdBy, distributorId }) => {
     try {
         let response = RESPONSE;
-        const user_params = {
+        const queryFilter = {
             isDeleted: false
         };
-        let project = {};
+        let projection = {};
 
-        if (type === 'id') {
-            user_params._id = new ObjectId(_id);
-        } else if (type === 'createdBy') {
-            user_params.createdBy = new ObjectId(createdBy);
-            user_params.distributorId = new ObjectId(distributorId);
-            user_params._id = new ObjectId(_id);
-        } else if (type === 'phone') {
-            user_params.phone = phone;
-        } else if (type === 'limited_detail') {
-            user_params._id = new ObjectId(_id);
-            project = {
-                _id: 1,
-                name: 1,
-                phone: 1,
-                email: 1,
-                title: 1,
-                distributorId: 1,
-                manufacturerId: 1
-            }
-        } else if (type === "email_not_equal") {
-            user_params.email = email.toLowerCase();
-            user_params._id = { $ne: new ObjectId(_id) };
-        } else if (type === "phone_not_equal") {
-            user_params.phone = phone;
-            user_params._id = { $ne: new ObjectId(_id) };
-        } else {
-            user_params.email = email.toLowerCase();
+        const LIMITED_DETAIL_PROJECTION = {
+            name: 1,
+            phone: 1,
+            email: 1,
+            title: 1,
+            distributorId: 1,
+            createdBy: 1
         };
-        const user_details = await findOne(COLLECTION_NAMES.DISTRIBUTOR_CONTACT_COLLECTION, user_params, project);
-        if (user_details) {
+
+        if (queryType === 'id') {
+            queryFilter._id = new ObjectId(_id);
+        } else if (queryType === 'createdBy') {
+            queryFilter.createdBy = new ObjectId(createdBy);
+            queryFilter.distributorId = new ObjectId(distributorId);
+            queryFilter._id = new ObjectId(_id);
+            projection = LIMITED_DETAIL_PROJECTION;
+        } else if (queryType === 'phone') {
+            queryFilter.phone = phone;
+        } else if (queryType === 'limited_detail') {
+            queryFilter._id = new ObjectId(_id);
+            projection = LIMITED_DETAIL_PROJECTION;
+        } else if (queryType === "emailNotEqual") {
+            queryFilter.email = email.toLowerCase();
+            queryFilter._id = { $ne: new ObjectId(_id) };
+        } else if (queryType === "phoneNotEqual") {
+            queryFilter.phone = phone;
+            queryFilter._id = { $ne: new ObjectId(_id) };
+        } else {
+            queryFilter.email = email.toLowerCase();
+        };
+        const contact_details = await findOneDocument(COLLECTION_NAMES.DISTRIBUTOR_CONTACTS, queryFilter, projection);
+        if (contact_details) {
             response = {
                 status: 1,
-                message: RESPONSE_MESSAGES.USER_DETAIL,
+                message: RESPONSE_MESSAGES.CONTACT_FETCH_SUCCESS,
                 statusCode: RESPONSE_CODES.GET,
-                data: user_details
+                data: contact_details
             };
         } else {
             response = {
                 status: 0,
-                message: RESPONSE_MESSAGES.NO_DATA_FOUND,
+                message: RESPONSE_MESSAGES.DATA_NOT_FOUND,
                 statusCode: RESPONSE_CODES.NOT_FOUND,
                 data: {}
             };
@@ -67,7 +69,7 @@ export const contactDetail = async ({ type, _id, email, phone, createdBy, distri
     };
 };
 
-export const addContactService = async ({ name, title, email, phone, isPrimary, createdBy, distributorId }) => {
+export const addDistributorContactService = async ({ name, title, email, phone, isPrimary, createdBy, distributorId }) => {
     try {
         let response = RESPONSE;
         const currentTime = parseInt(moment().tz(process.env.TIMEZONE).format("x"));
@@ -84,7 +86,7 @@ export const addContactService = async ({ name, title, email, phone, isPrimary, 
             createdAt: currentTime,
             updatedAt: currentTime
         };
-        const contact = await find(COLLECTION_NAMES.DISTRIBUTOR_CONTACT_COLLECTION, { createdBy, distributorId }, {
+        const contact = await findDocuments(COLLECTION_NAMES.DISTRIBUTOR_CONTACTS, { createdBy, distributorId }, {
             name: 1,
             title: 1,
             email: 1,
@@ -96,24 +98,24 @@ export const addContactService = async ({ name, title, email, phone, isPrimary, 
         if (contact && contact.length === 0) {
             contactData.isPrimary = true;
         } else if (contact.length !== 0 && isPrimary) {
-            await updateMany(COLLECTION_NAMES.DISTRIBUTOR_CONTACT_COLLECTION, { createdBy, distributorId }, { $set: { isPrimary: false } });
+            await updateDocuments(COLLECTION_NAMES.DISTRIBUTOR_CONTACTS, { createdBy, distributorId }, { $set: { isPrimary: false } });
             contactData.isPrimary = isPrimary;
         } else {
             contactData.isPrimary = false;
         };
-        const result = await insertOne(COLLECTION_NAMES.DISTRIBUTOR_CONTACT_COLLECTION, contactData);
+        const result = await insertDocument(COLLECTION_NAMES.DISTRIBUTOR_CONTACTS, contactData);
         if (result.acknowledged) {
-            await updateOne(COLLECTION_NAMES.DISTRIBUTOR_COLLECTION, { _id: distributorId, createdBy }, { $inc: { contacts: 1 } });
+            await updateDocument(COLLECTION_NAMES.DISTRIBUTORS, { _id: distributorId, createdBy }, { $inc: { contacts: 1 } });
             response = {
                 status: 1,
-                message: RESPONSE_MESSAGES.CONTACT_ADDED,
+                message: RESPONSE_MESSAGES.CONTACT_ADD_SUCCESS,
                 statusCode: RESPONSE_CODES.POST,
                 data: { insertedId: result.insertedId }
             };
         } else {
             response = {
                 status: 0,
-                message: RESPONSE_MESSAGES.FAILED_TO_ADD_CONTACT,
+                message: RESPONSE_MESSAGES.CONTACT_ADD_FAILED,
                 statusCode: RESPONSE_CODES.BAD_REQUEST,
                 data: {}
             };
@@ -136,8 +138,8 @@ export const makeContactPrimaryService = async ({ createdBy, distributorId, cont
         createdBy = new ObjectId(createdBy);
         distributorId = new ObjectId(distributorId);
         contactId = new ObjectId(contactId);
-        await updateMany(COLLECTION_NAMES.DISTRIBUTOR_CONTACT_COLLECTION, { distributorId, createdBy }, { $set: { isPrimary: false } });
-        const result = await updateOne(COLLECTION_NAMES.DISTRIBUTOR_CONTACT_COLLECTION, { _id: contactId, createdBy, distributorId }, {
+        await updateDocuments(COLLECTION_NAMES.DISTRIBUTOR_CONTACTS, { distributorId, createdBy }, { $set: { isPrimary: false } });
+        const result = await updateDocument(COLLECTION_NAMES.DISTRIBUTOR_CONTACTS, { _id: contactId, createdBy, distributorId }, {
             $set: {
                 isPrimary: true,
                 updatedAt: currentTime
@@ -146,14 +148,14 @@ export const makeContactPrimaryService = async ({ createdBy, distributorId, cont
         if (result.matchedCount === 0) {
             response = {
                 status: 0,
-                message: RESPONSE_MESSAGES.NO_DATA_FOUND,
+                message: RESPONSE_MESSAGES.DATA_NOT_FOUND,
                 statusCode: RESPONSE_CODES.NOT_FOUND,
                 data: {}
             };
         } else {
             response = {
                 status: 1,
-                message: RESPONSE_MESSAGES.SUCCESSFULLY_MARKED_CONTACT_AS_PRIMARY,
+                message: RESPONSE_MESSAGES.CONTACT_MARK_PRIMARY_SUCCESS,
                 statusCode: RESPONSE_CODES.GET,
                 data: {}
             };
@@ -169,12 +171,12 @@ export const makeContactPrimaryService = async ({ createdBy, distributorId, cont
     };
 };
 
-export const contactListingService = async ({ createdBy, distributorId, page, limit }) => {
+export const distributorContactListingService = async ({ createdBy, distributorId, page, limit }) => {
     try {
         let response = RESPONSE;
         createdBy = new ObjectId(createdBy);
         distributorId = new ObjectId(distributorId);
-        const result = await find(COLLECTION_NAMES.DISTRIBUTOR_CONTACT_COLLECTION, { createdBy, distributorId }, {
+        const result = await findDocuments(COLLECTION_NAMES.DISTRIBUTOR_CONTACTS, { createdBy, distributorId }, {
             name: 1,
             title: 1,
             email: 1,
@@ -204,15 +206,15 @@ export const contactListingService = async ({ createdBy, distributorId, page, li
     };
 };
 
-export const deleteContactService = async ({ createdBy, distributorId, contactId }) => {
+export const deleteDistributorContactService = async ({ createdBy, distributorId, contactId }) => {
     try {
         let response = RESPONSE;
         createdBy = new ObjectId(createdBy);
         distributorId = new ObjectId(distributorId);
         contactId = new ObjectId(contactId);
         const currentTime = parseInt(moment().tz(process.env.TIMEZONE).format("x"));
-        const contacts = await find(COLLECTION_NAMES.DISTRIBUTOR_CONTACT_COLLECTION, { createdBy, distributorId });
-        const isPrimaryContact = await findOne(COLLECTION_NAMES.DISTRIBUTOR_CONTACT_COLLECTION, {
+        const contacts = await findDocuments(COLLECTION_NAMES.DISTRIBUTOR_CONTACTS, { createdBy, distributorId });
+        const isPrimaryContact = await findOneDocument(COLLECTION_NAMES.DISTRIBUTOR_CONTACTS, {
             _id: contactId,
             isPrimary: true,
             createdBy,
@@ -221,12 +223,12 @@ export const deleteContactService = async ({ createdBy, distributorId, contactId
         if (contacts.length > 1 && isPrimaryContact) {
             response = {
                 status: 0,
-                message: RESPONSE_MESSAGES.MAKE_ONE_CONTACT_PRIMARY_BEFORE_DELETING_THE_PRIMARY_CONTACT,
+                message: RESPONSE_MESSAGES.CONTACT_PRIMARY_DELETE_ERROR,
                 statusCode: RESPONSE_CODES.BAD_REQUEST,
                 data: {}
             };
         } else {
-            let result = await updateOne(COLLECTION_NAMES.DISTRIBUTOR_CONTACT_COLLECTION, { _id: contactId, createdBy, distributorId }, {
+            let result = await updateDocument(COLLECTION_NAMES.DISTRIBUTOR_CONTACTS, { _id: contactId, createdBy, distributorId }, {
                 $set: {
                     isDeleted: true,
                     updatedAt: currentTime
@@ -235,15 +237,15 @@ export const deleteContactService = async ({ createdBy, distributorId, contactId
             if (result.matchedCount === 0) {
                 response = {
                     status: 0,
-                    message: RESPONSE_MESSAGES.NO_DATA_FOUND,
+                    message: RESPONSE_MESSAGES.DATA_NOT_FOUND,
                     statusCode: RESPONSE_CODES.NOT_FOUND,
                     data: {}
                 };
             } else {
-                await updateOne(COLLECTION_NAMES.DISTRIBUTOR_COLLECTION, { _id: distributorId, createdBy }, { $inc: { contacts: -1 } });
+                await updateDocument(COLLECTION_NAMES.DISTRIBUTORS, { _id: distributorId, createdBy }, { $inc: { contacts: -1 } });
                 response = {
                     status: 1,
-                    message: RESPONSE_MESSAGES.CONTACT_DELETED,
+                    message: RESPONSE_MESSAGES.CONTACT_DELETE_SUCCESS,
                     statusCode: RESPONSE_CODES.GET,
                     data: {}
                 };

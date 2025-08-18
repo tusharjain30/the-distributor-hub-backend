@@ -1,8 +1,8 @@
 import { RESPONSE_CODES, RESPONSE_MESSAGES } from "../../../../config/constants.js";
 import { RESPONSE } from "../../../helpers/response.js";
-import { addContactService, contactDetail, deleteContactService, contactListingService, makeContactPrimaryService } from "../../../services/api_v_1/distributor/contact.service.js";
-import { distributorDetail } from "../../../services/api_v_1/distributor/distributor.service.js";
-import { userDetail } from "../../../services/api_v_1/user.service.js";
+import { makeContactPrimaryService, getDistributorContactDetails, addDistributorContactService, distributorContactListingService, deleteDistributorContactService } from "../../../services/api_v_1/distributor/contact.service.js";
+import { getDistributorDetails } from "../../../services/api_v_1/distributor/distributor.service.js";
+import { getUserDetails } from "../../../services/api_v_1/user.service.js";
 
 export const addContactController = async (req, res) => {
     try {
@@ -10,9 +10,9 @@ export const addContactController = async (req, res) => {
         const user = req.user;
         const body = req.body;
         body.createdBy = user._id;
-        let user_info = await userDetail({ type: "limited_detail", _id: body.createdBy });
+        let user_info = await getUserDetails({ queryType: "limited_detail", userId: body.createdBy });
         if (user_info.status) {
-            let distributor_info = await distributorDetail({ type: "createdBy", _id: body.distributorId, createdBy: body.createdBy });
+            let distributor_info = await getDistributorDetails({ queryType: "createdBy", _id: body.distributorId, createdBy: body.createdBy });
             if (!distributor_info.status) {
                 response = {
                     status: 0,
@@ -21,24 +21,24 @@ export const addContactController = async (req, res) => {
                     data: {}
                 };
             } else {
-                let contact_email = await contactDetail({ email: body.email });
-                let contact_phone = await contactDetail({ type: "phone", phone: body.phone });
+                let contact_email = await getDistributorContactDetails({ email: body.email });
+                let contact_phone = await getDistributorContactDetails({ queryType: "phone", phone: body.phone });
                 if (contact_email.status) {
                     response = {
                         status: 0,
-                        message: RESPONSE_MESSAGES.CONTACT_EMAIL_IS_ALREADY_Exists,
+                        message: RESPONSE_MESSAGES.CONTACT_EMAIL_EXISTS,
                         statusCode: RESPONSE_CODES.ALREADY_EXIST,
                         data: {}
                     };
                 } else if (contact_phone.status) {
                     response = {
                         status: 0,
-                        message: RESPONSE_MESSAGES.CONTACT_PHONE_NUMBER_IS_ALREADY_Exists,
+                        message: RESPONSE_MESSAGES.CONTACT_PHONE_EXISTS,
                         statusCode: RESPONSE_CODES.ALREADY_EXIST,
                         data: {}
                     };
                 } else {
-                    response = await addContactService(body);
+                    response = await addDistributorContactService(body);
                 };
             };
         } else {
@@ -66,11 +66,11 @@ export const makeContactPrimaryController = async (req, res) => {
         const user = req.user;
         const body = req.body;
         body.createdBy = user._id;
-        let user_info = await userDetail({ type: "limited_detail", _id: body.createdBy });
+        let user_info = await getUserDetails({ queryType: "limited_detail", userId: body.createdBy });
         if (user_info.status) {
-            let distributor_info = await distributorDetail({ type: "createdBy", _id: body.distributorId, createdBy: body.createdBy });
+            let distributor_info = await getDistributorDetails({ queryType: "createdBy", _id: body.distributorId, createdBy: body.createdBy });
             if (distributor_info.status) {
-                let contact_info = await contactDetail({ type: "createdBy", _id: body.contactId, createdBy: body.createdBy, distributorId: body.distributorId });
+                let contact_info = await getDistributorContactDetails({ queryType: "createdBy", _id: body.contactId, createdBy: body.createdBy, distributorId: body.distributorId });
                 if (contact_info.status) {
                     response = await makeContactPrimaryService(body);
                 } else {
@@ -114,11 +114,11 @@ export const contactListingController = async (req, res) => {
         const user = req.user;
         const body = req.validatedQuery;
         body.createdBy = user._id;
-        let user_info = await userDetail({ type: "limited_detail", _id: body.createdBy });
+        let user_info = await getUserDetails({ queryType: "limited_detail", userId: body.createdBy });
         if (user_info.status) {
-            let distributor_info = await distributorDetail({ type: "createdBy", _id: body.distributorId, createdBy: body.createdBy });
+            let distributor_info = await getDistributorDetails({ queryType: "createdBy", _id: body.distributorId, createdBy: body.createdBy });
             if (distributor_info.status) {
-                response = await contactListingService(body);
+                response = await distributorContactListingService(body);
             } else {
                 response = {
                     status: 0,
@@ -152,13 +152,13 @@ export const deleteContactController = async (req, res) => {
         const user = req.user;
         const body = req.body;
         body.createdBy = user._id;
-        let user_info = await userDetail({ type: "limited_detail", _id: body.createdBy });
+        let user_info = await getUserDetails({ queryType: "limited_detail", userId: body.createdBy });
         if (user_info.status) {
-            let distributor_info = await distributorDetail({ type: "createdBy", _id: body.distributorId, createdBy: body.createdBy });
+            let distributor_info = await getDistributorDetails({ queryType: "createdBy", _id: body.distributorId, createdBy: body.createdBy });
             if (distributor_info.status) {
-                let contact_info = await contactDetail({ type: "createdBy", _id: body.contactId, createdBy: body.createdBy, distributorId: body.distributorId });
+                let contact_info = await getDistributorContactDetails({ queryType: "createdBy", _id: body.contactId, createdBy: body.createdBy, distributorId: body.distributorId });
                 if (contact_info.status) {
-                    response = await deleteContactService(body);
+                    response = await deleteDistributorContactService(body);
                 } else {
                     response = {
                         status: 0,

@@ -1,7 +1,8 @@
 import { RESPONSE_CODES, RESPONSE_MESSAGES } from "../../../../config/constants.js";
 import { RESPONSE } from "../../../helpers/response.js";
-import { addDistributorService, deleteDistributorService, distributorDetail, distributorListingService, updateDistributorService } from "../../../services/api_v_1/distributor/distributor.service.js";
-import { userDetail } from "../../../services/api_v_1/user.service.js";
+import { addDistributorService, deleteDistributorService, distributorListingService, getDistributorDetails, updateDistributorService } from "../../../services/api_v_1/distributor/distributor.service.js";
+import { getStatusById } from "../../../services/api_v_1/status.service.js";
+import { getUserDetails } from "../../../services/api_v_1/user.service.js";
 
 export const addDistributorController = async (req, res) => {
     try {
@@ -9,21 +10,29 @@ export const addDistributorController = async (req, res) => {
         const user = req.user;
         const body = req.body;
         body.createdBy = user._id;
-        let user_info = await userDetail({ type: "limited_detail", _id: body.createdBy });
+        let user_info = await getUserDetails({ queryType: "limited_detail", userId: body.createdBy });
         if (user_info.status) {
-            let distributor_email = await distributorDetail({ email: body.email });
-            let distributor_phone = await distributorDetail({ type: "phone", phone: body.phone });
-            if (distributor_email.status) {
+            let distributor_statusId = await getStatusById({ statusId: body.statusId });
+            let distributor_email = await getDistributorDetails({ email: body.email });
+            let distributor_phone = await getDistributorDetails({ queryType: "phone", phone: body.phone });
+            if (!distributor_statusId.status) {
                 response = {
                     status: 0,
-                    message: RESPONSE_MESSAGES.DISTRIBUTOR_EMAIL_IS_ALREADY_Exists,
+                    message: RESPONSE_MESSAGES.INVALID_STATUS_ID,
+                    statusCode: RESPONSE_CODES.BAD_REQUEST,
+                    data: {}
+                };
+            } else if (distributor_email.status) {
+                response = {
+                    status: 0,
+                    message: RESPONSE_MESSAGES.DISTRIBUTOR_EMAIL_EXISTS,
                     statusCode: RESPONSE_CODES.ALREADY_EXIST,
                     data: {}
                 };
             } else if (distributor_phone.status) {
                 response = {
                     status: 0,
-                    message: RESPONSE_MESSAGES.DISTRIBUTOR_PHONE_NUMBER_IS_ALREADY_Exists,
+                    message: RESPONSE_MESSAGES.DISTRIBUTOR_PHONE_EXISTS,
                     statusCode: RESPONSE_CODES.ALREADY_EXIST,
                     data: {}
                 };
@@ -55,9 +64,9 @@ export const updateDistributorController = async (req, res) => {
         const user = req.user;
         const body = req.body;
         body.updatedBy = user._id;
-        let user_info = await userDetail({ type: "limited_detail", _id: user._id });
+        let user_info = await getUserDetails({ queryType: "limited_detail", userId: user._id });
         if (user_info.status) {
-            let distributor_info = await distributorDetail({ type: "createdBy", _id: body.distributorId, createdBy: user._id });
+            let distributor_info = await getDistributorDetails({ queryType: "createdBy", _id: body.distributorId, createdBy: user._id });
             if (!distributor_info.status) {
                 response = {
                     status: 0,
@@ -66,19 +75,27 @@ export const updateDistributorController = async (req, res) => {
                     data: {}
                 };
             } else {
-                let distributor_email = await distributorDetail({ type: "email_not_equal", email: body.email, _id: body.distributorId });
-                let distributor_phone = await distributorDetail({ type: "phone_not_equal", phone: body.phone, _id: body.distributorId });
-                if (distributor_email.status) {
+                let distributor_statusId = await getStatusById({ statusId: body.statusId });
+                let distributor_email = await getDistributorDetails({ queryType: "emailNotEqual", email: body.email, _id: body.distributorId });
+                let distributor_phone = await getDistributorDetails({ queryType: "phoneNotEqual", phone: body.phone, _id: body.distributorId });
+                if (!distributor_statusId.status) {
                     response = {
                         status: 0,
-                        message: RESPONSE_MESSAGES.DISTRIBUTOR_EMAIL_IS_ALREADY_Exists,
+                        message: RESPONSE_MESSAGES.INVALID_STATUS_ID,
+                        statusCode: RESPONSE_CODES.BAD_REQUEST,
+                        data: {}
+                    };
+                } else if (distributor_email.status) {
+                    response = {
+                        status: 0,
+                        message: RESPONSE_MESSAGES.DISTRIBUTOR_EMAIL_EXISTS,
                         statusCode: RESPONSE_CODES.ALREADY_EXIST,
                         data: {}
                     };
                 } else if (distributor_phone.status) {
                     response = {
                         status: 0,
-                        message: RESPONSE_MESSAGES.DISTRIBUTOR_PHONE_NUMBER_IS_ALREADY_Exists,
+                        message: RESPONSE_MESSAGES.DISTRIBUTOR_PHONE_EXISTS,
                         statusCode: RESPONSE_CODES.ALREADY_EXIST,
                         data: {}
                     };
@@ -110,9 +127,9 @@ export const deleteDistributorController = async (req, res) => {
         let response = RESPONSE;
         const user = req.user;
         const body = req.body;
-        let user_info = await userDetail({ type: "limited_detail", _id: user._id });
+        let user_info = await getUserDetails({ queryType: "limited_detail", userId: user._id });
         if (user_info.status) {
-            let distributor_info = await distributorDetail({ type: "createdBy", _id: body.distributorId, createdBy: user._id });
+            let distributor_info = await getDistributorDetails({ queryType: "createdBy", _id: body.distributorId, createdBy: user._id });
             if (!distributor_info.status) {
                 response = {
                     status: 0,
@@ -146,7 +163,7 @@ export const distributorListingController = async (req, res) => {
     try {
         let response = RESPONSE;
         const user = req.user;
-        let user_info = await userDetail({ type: "limited_detail", _id: user._id });
+        let user_info = await getUserDetails({ queryType: "limited_detail", userId: user._id });
         if (user_info.status) {
             response = await distributorListingService({ ...req.validatedQuery, createdBy: user._id });
         } else {
@@ -173,9 +190,9 @@ export const getDistributorDetailsController = async (req, res) => {
         let response = RESPONSE;
         const user = req.user;
         const body = req.params;
-        let user_info = await userDetail({ type: "limited_detail", _id: user._id });
+        let user_info = await getUserDetails({ queryType: "limited_detail", userId: user._id });
         if (user_info.status) {
-            let distributor_info = await distributorDetail({ type: "createdBy", _id: body.distributorId, createdBy: user._id });
+            let distributor_info = await getDistributorDetails({ queryType: "createdBy", _id: body.distributorId, createdBy: user._id });
             if (!distributor_info.status) {
                 response = {
                     status: 0,

@@ -1,28 +1,27 @@
 import moment from "moment-timezone";
 import { COLLECTION_NAMES, RESPONSE_CODES, RESPONSE_MESSAGES } from "../../../config/constants.js";
-import { findOne, insertOne, updateOne } from "../../../config/dbMethods.js";
+import { findOneDocument, insertDocument, updateDocument } from "../../../config/dbMethods.js";
 import { ObjectId } from "mongodb";
-import { refreshToken } from "../../helpers/jwt.js";
 import { RESPONSE } from "../../helpers/response.js";
 
-export const userDetail = async ({ type, _id, role, email }) => {
+export const getUserDetails = async ({ queryType, userId, role, email }) => {
     try {
         let response = RESPONSE;
-        const user_params = {
+        const queryFilter = {
             isDeleted: false
         };
-        let project = {};
+        let projection = {};
 
-        if (type === 'id') {
-            user_params._id = new ObjectId(_id);
-            project = {
+        if (queryType === 'byId') {
+            queryFilter._id = new ObjectId(userId);
+            projection = {
                 refreshToken: 0
             };
-        } else if (type === 'role') {
-            user_params.role = role;
-        } else if (type === 'limited_detail') {
-            user_params._id = new ObjectId(_id);
-            project = {
+        } else if (queryType === 'byRole') {
+            queryFilter.role = role;
+        } else if (queryType === 'limited_detail') {
+            queryFilter._id = new ObjectId(userId);
+            projection = {
                 _id: 1,
                 name: 1,
                 role: 1,
@@ -30,24 +29,25 @@ export const userDetail = async ({ type, _id, role, email }) => {
                 regions: 1,
                 distributorId: 1
             };
-        } else if (type === "email_not_equal") {
-            user_params.email = email.toLowerCase();
-            user_params._id = { $ne: new ObjectId(_id) };
+        } else if (queryType === "emailNotEqual") {
+            queryFilter.email = email.toLowerCase();
+            queryFilter._id = { $ne: new ObjectId(userId) };
         } else {
-            user_params.email = email.toLowerCase();
+            queryFilter.email = email.toLowerCase();
         };
-        const user_details = await findOne(COLLECTION_NAMES.USER_COLLECTION, user_params, project);
+
+        const user_details = await findOneDocument(COLLECTION_NAMES.USERS, queryFilter, projection);
         if (user_details) {
             response = {
                 status: 1,
-                message: RESPONSE_MESSAGES.USER_DETAIL,
+                message: RESPONSE_MESSAGES.USER_FETCH_SUCCESS,
                 statusCode: RESPONSE_CODES.GET,
                 data: user_details
             };
         } else {
             response = {
                 status: 0,
-                message: RESPONSE_MESSAGES.NO_DATA_FOUND,
+                message: RESPONSE_MESSAGES.DATA_NOT_FOUND,
                 statusCode: RESPONSE_CODES.NOT_FOUND,
                 data: {}
             };
@@ -79,22 +79,22 @@ export const registerService = async ({ name, email, role, regions, distributorI
             updatedAt: currentTime
         };
         if (regions) {
-            conditions.regions = regions;
+            conditions.regions = regions.map(_id => new ObjectId(_id));
         } else if (distributorId) {
-            conditions.distributorId = distributorId;
+            conditions.distributorId = new ObjectId(distributorId);
         };
-        const result = await insertOne(COLLECTION_NAMES.USER_COLLECTION, conditions);
+        const result = await insertDocument(COLLECTION_NAMES.USERS, conditions);
         if (result.acknowledged) {
             response = {
                 status: 1,
-                message: RESPONSE_MESSAGES.R2EGISTER_SUCCESS,
+                message: RESPONSE_MESSAGES.USER_REGISTER_SUCCESS,
                 statusCode: RESPONSE_CODES.POST,
                 data: { insertedId: result.insertedId }
             };
         } else {
             response = {
                 status: 0,
-                message: RESPONSE_MESSAGES.USER_FAILED_TO_REGISTER,
+                message: RESPONSE_MESSAGES.USER_REGISTER_FAILED,
                 statusCode: RESPONSE_CODES.BAD_REQUEST,
                 data: {}
             };
@@ -114,11 +114,11 @@ export const loginService = async ({ _id, refresh_token }) => {
     try {
         let response = RESPONSE;
         const currentTime = parseInt(moment().tz(process.env.TIMEZONE).format("x"));
-        const result = await updateOne(COLLECTION_NAMES.USER_COLLECTION, { _id }, { $set: { refreshToken: refresh_token, status: 1, updatedAt: currentTime } });
+        const result = await updateDocument(COLLECTION_NAMES.USERS, { _id: new ObjectId(_id) }, { $set: { refreshToken: refresh_token, status: 1, updatedAt: currentTime } });
         if (result.matchedCount === 0) {
             response = {
                 status: 0,
-                message: RESPONSE_MESSAGES.NO_DATA_FOUND,
+                message: RESPONSE_MESSAGES.DATA_NOT_FOUND,
                 statusCode: RESPONSE_CODES.NOT_FOUND,
                 data: {}
             };
@@ -151,23 +151,22 @@ export const updateProfileService = async ({ _id, name, email, regions, distribu
             updatedAt: currentTime
         };
         if (regions) {
-            conditions.regions = regions;
+            conditions.regions = regions.map(_id => new ObjectId(_id));
+        } else if (distributorId) {
+            conditions.distributorId = new ObjectId(distributorId);
         };
-        if (distributorId) {
-            conditions.distributorId = distributorId;
-        };
-        const result = await updateOne(COLLECTION_NAMES.USER_COLLECTION, { _id: new ObjectId(_id) }, { $set: conditions });
+        const result = await updateDocument(COLLECTION_NAMES.USERS, { _id: new ObjectId(_id) }, { $set: conditions });
         if (result.matchedCount === 0) {
             response = {
                 status: 0,
-                message: RESPONSE_MESSAGES.FAILED_TO_UPDATE_PROFILE,
+                message: RESPONSE_MESSAGES.USER_UPDATE_FAILED,
                 statusCode: RESPONSE_CODES.BAD_REQUEST,
                 data: {}
             };
         } else {
             response = {
                 status: 1,
-                message: RESPONSE_MESSAGES.PROFILE_UPDATED,
+                message: RESPONSE_MESSAGES.USER_UPDATE_SUCCESS,
                 statusCode: RESPONSE_CODES.GET,
                 data: {}
             };

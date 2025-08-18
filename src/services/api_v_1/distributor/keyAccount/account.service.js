@@ -2,75 +2,65 @@ import moment from "moment-timezone";
 import { ObjectId } from "mongodb";
 import { RESPONSE } from "../../../../helpers/response.js";
 import { COLLECTION_NAMES, RESPONSE_CODES, RESPONSE_MESSAGES } from "../../../../../config/constants.js";
-import { find, findOne, insertOne, updateOne } from "../../../../../config/dbMethods.js";
+import { findOneDocument, insertDocument, updateDocument } from "../../../../../config/dbMethods.js";
 
-export const keyAccountDetail = async ({ type, _id, email, phone, distributorId, createdBy }) => {
+export const getDistributorkeyAccountDetails = async ({ queryType, _id, email, phone, distributorId, createdBy }) => {
     try {
         let response = RESPONSE;
-        const key_account_params = {
+        const queryFilter = {
             isDeleted: false
         };
-        let project = {};
 
-        if (type === 'id') {
-            key_account_params._id = new ObjectId(_id);
-        } else if (type === 'phone') {
-            key_account_params.phone = phone;
-        } else if (type === 'limited_detail') {
-            key_account_params._id = new ObjectId(_id);
-            project = {
-                contactName: 1,
-                companyName: 1,
-                email: 1,
-                phone: 1,
-                value: 1,
-                status: 1,
-                regions: 1,
-                adoptionLevel: 1,
-                lastContact: 1,
-                distributor: 1,
-                notes: 1,
-                contacts: 1
-            };
-        } else if (type === "distributorId_createdBy") {
-            key_account_params._id = new ObjectId(_id);
-            key_account_params.distributorId = new ObjectId(distributorId);
-            key_account_params.createdBy = new ObjectId(createdBy);
-            project = {
-                contactName: 1,
-                companyName: 1,
-                email: 1,
-                phone: 1,
-                value: 1,
-                status: 1,
-                regions: 1,
-                adoptionLevel: 1,
-                lastContact: 1,
-                distributor: 1,
-                notes: 1,
-                contacts: 1
-            };
-        } else if (type === "email_not_equal") {
-            key_account_params.email = email.toLowerCase();
-            key_account_params._id = { $ne: new ObjectId(_id) };
-        } else if (type === "phone_not_equal") {
-            key_account_params.phone = phone;
-            key_account_params._id = { $ne: new ObjectId(_id) };
-        } else {
-            key_account_params.email = email.toLowerCase();
+        let projection = {};
+
+        const LIMITED_DETAIL_PROJECTION = {
+            contactName: 1,
+            companyName: 1,
+            email: 1,
+            phone: 1,
+            value: 1,
+            status: 1,
+            regions: 1,
+            adoptionLevel: 1,
+            lastContact: 1,
+            distributor: 1,
+            notes: 1,
+            contacts: 1
         };
-        const account_details = await findOne(COLLECTION_NAMES.DISTRIBUTOR_KEY_ACCOUNT_COLLECTION, key_account_params, project);
+
+        if (queryType === 'id') {
+            queryFilter._id = new ObjectId(_id);
+        } else if (queryType === 'phone') {
+            queryFilter.phone = phone;
+        } else if (queryType === 'limited_detail') {
+            queryFilter._id = new ObjectId(_id);
+            projection = LIMITED_DETAIL_PROJECTION;
+        } else if (queryType === "distributorId_createdBy") {
+            queryFilter._id = new ObjectId(_id);
+            queryFilter.distributorId = new ObjectId(distributorId);
+            queryFilter.createdBy = new ObjectId(createdBy);
+            projection = LIMITED_DETAIL_PROJECTION;
+        } else if (queryType === "emailNotEqual") {
+            queryFilter.email = email.toLowerCase();
+            queryFilter._id = { $ne: new ObjectId(_id) };
+        } else if (queryType === "phoneNotEqual") {
+            queryFilter.phone = phone;
+            queryFilter._id = { $ne: new ObjectId(_id) };
+        } else {
+            queryFilter.email = email.toLowerCase();
+        };
+        const account_details = await findOneDocument(COLLECTION_NAMES.DISTRIBUTOR_KEY_ACCOUNTS, queryFilter, projection);
         if (account_details) {
             response = {
                 status: 1,
-                message: RESPONSE_MESSAGES.ACCOUNT_DETAILS_FETCHED,
+                message: RESPONSE_MESSAGES.ACCOUNT_FETCH_SUCCESS,
                 statusCode: RESPONSE_CODES.GET,
                 data: account_details
             };
         } else {
             response = {
                 status: 0,
-                message: RESPONSE_MESSAGES.NO_DATA_FOUND,
+                message: RESPONSE_MESSAGES.DATA_NOT_FOUND,
                 statusCode: RESPONSE_CODES.NOT_FOUND,
                 data: {}
             };
@@ -86,7 +76,7 @@ export const keyAccountDetail = async ({ type, _id, email, phone, distributorId,
     };
 };
 
-export const addKeyAccountService = async ({ contactName, companyName, email, phone, value, status, region, adoptionLevel, lastContact, distributor, createdBy, distributorId }) => {
+export const addDistributorKeyAccountService = async ({ contactName, companyName, email, phone, value, statusId, regionId, adoptionLevelId, lastContact, distributorNameId, createdBy, distributorId }) => {
     try {
         let response = RESPONSE;
         const currentTime = parseInt(moment().tz(process.env.TIMEZONE).format("x"));
@@ -98,13 +88,13 @@ export const addKeyAccountService = async ({ contactName, companyName, email, ph
             email,
             phone,
             value,
-            status,
-            region,
-            adoptionLevel,
-            lastContact,
-            distributor,
+            statusId: new ObjectId(statusId),
+            regionId: regionId ? new ObjectId(regionId) : null,
+            adoptionLevelId: adoptionLevelId ? new ObjectId(adoptionLevelId) : null,
+            lastContact: lastContact ? lastContact : null,
+            distributorNameId: distributorNameId ? new ObjectId(distributorNameId) : null,
             createdBy,
-            distributorId,
+            distributorId: new ObjectId(distributorId),
             contacts: 0,
             notes: 0,
             updatedBy: null,
@@ -113,19 +103,19 @@ export const addKeyAccountService = async ({ contactName, companyName, email, ph
             updatedAt: currentTime
         };
 
-        const result = await insertOne(COLLECTION_NAMES.DISTRIBUTOR_KEY_ACCOUNT_COLLECTION, accountData);
+        const result = await insertDocument(COLLECTION_NAMES.DISTRIBUTOR_KEY_ACCOUNTS, accountData);
         if (result.acknowledged) {
-            await updateOne(COLLECTION_NAMES.DISTRIBUTOR_COLLECTION, { _id: distributorId, createdBy }, { $inc: { key_accounts: 1 } });
+            await updateDocument(COLLECTION_NAMES.DISTRIBUTORS, { _id: distributorId, createdBy }, { $inc: { key_accounts: 1 } });
             response = {
                 status: 1,
-                message: RESPONSE_MESSAGES.ACCOUNT_ADDED,
+                message: RESPONSE_MESSAGES.ACCOUNT_ADD_SUCCESS,
                 statusCode: RESPONSE_CODES.POST,
                 data: { insertedId: result.insertedId }
             };
         } else {
             response = {
                 status: 0,
-                message: RESPONSE_MESSAGES.FAILED_TO_ADD_ACCOUNT,
+                message: RESPONSE_MESSAGES.ACCOUNT_ADD_FAILED,
                 statusCode: RESPONSE_CODES.BAD_REQUEST,
                 data: {}
             };
@@ -141,7 +131,7 @@ export const addKeyAccountService = async ({ contactName, companyName, email, ph
     };
 };
 
-export const keyAccountListingService = async ({ createdBy, distributorId, search, region, status, distributor, page, limit }) => {
+export const distributorKeyAccountListingService = async ({ createdBy, distributorId, search, region, status, distributor, page, limit }) => {
     try {
         let response = RESPONSE;
 
@@ -159,7 +149,7 @@ export const keyAccountListingService = async ({ createdBy, distributorId, searc
             ];
         };
 
-        if (region && region.toLowerCase() !== "all") {
+        if (region && region.toLowerCase() !== "all" && region !== "") {
             filter.region = { $regex: region, $options: "i" };
         };
 
@@ -170,7 +160,7 @@ export const keyAccountListingService = async ({ createdBy, distributorId, searc
         if (distributor && distributor.toLowerCase() !== "all") {
             filter["distributor"] = { $regex: distributor, $options: "i" };
         };
-        const result = await find(COLLECTION_NAMES.DISTRIBUTOR_KEY_ACCOUNT_COLLECTION, filter, {
+        const result = await find(COLLECTION_NAMES.DISTRIBUTOR_KEY_ACCOUNTS, filter, {
             contactName: 1,
             companyName: 1,
             email: 1,
@@ -186,7 +176,7 @@ export const keyAccountListingService = async ({ createdBy, distributorId, searc
         }, page, limit);
         response = {
             status: 1,
-            message: RESPONSE_MESSAGES.FETCHED,
+            message: RESPONSE_MESSAGES.FETCH_SUCCESS,
             statusCode: RESPONSE_CODES.GET,
             data: result,
             pagination: {
@@ -205,14 +195,14 @@ export const keyAccountListingService = async ({ createdBy, distributorId, searc
     };
 };
 
-export const deleteKeyAccountService = async ({ distributorId, createdBy, accountId }) => {
+export const deleteDistributorKeyAccountService = async ({ distributorId, createdBy, accountId }) => {
     try {
         let response = RESPONSE;
         const currentTime = parseInt(moment().tz(process.env.TIMEZONE).format("x"));
         distributorId = new ObjectId(distributorId);
         createdBy = new ObjectId(createdBy);
         accountId = new ObjectId(accountId);
-        let result = await updateOne(COLLECTION_NAMES.DISTRIBUTOR_KEY_ACCOUNT_COLLECTION, { _id: accountId, createdBy, distributorId }, {
+        let result = await updateDocument(COLLECTION_NAMES.DISTRIBUTOR_KEY_ACCOUNTS, { _id: accountId, createdBy, distributorId }, {
             $set: {
                 isDeleted: true,
                 updatedAt: currentTime
@@ -221,15 +211,15 @@ export const deleteKeyAccountService = async ({ distributorId, createdBy, accoun
         if (result.matchedCount === 0) {
             response = {
                 status: 0,
-                message: RESPONSE_MESSAGES.NO_DATA_FOUND,
+                message: RESPONSE_MESSAGES.DATA_NOT_FOUND,
                 statusCode: RESPONSE_CODES.NOT_FOUND,
                 data: {}
             };
         } else {
-            await updateOne(COLLECTION_NAMES.DISTRIBUTOR_COLLECTION, { _id: distributorId, createdBy }, { $inc: { key_accounts: -1 } });
+            await updateDocument(COLLECTION_NAMES.DISTRIBUTORS, { _id: distributorId, createdBy }, { $inc: { key_accounts: -1 } });
             response = {
                 status: 1,
-                message: RESPONSE_MESSAGES.ACCOUNT_DELETED,
+                message: RESPONSE_MESSAGES.ACCOUNT_DELETE_SUCCESS,
                 statusCode: RESPONSE_CODES.GET,
                 data: {}
             };
@@ -245,11 +235,11 @@ export const deleteKeyAccountService = async ({ distributorId, createdBy, accoun
     };
 };
 
-export const updateKeyAccountService = async ({ distributorId, accountId, createdBy, contactName, companyName, email, phone, value, status, region, adoptionLevel, lastContact, distributor, updatedBy }) => {
+export const updateDistributorKeyAccountService = async ({ distributorId, accountId, createdBy, contactName, companyName, email, phone, value, status, region, adoptionLevel, lastContact, distributor, updatedBy }) => {
     try {
         let response = RESPONSE;
         const currentTime = parseInt(moment().tz(process.env.TIMEZONE).format("x"));
-        const result = await updateOne(COLLECTION_NAMES.DISTRIBUTOR_KEY_ACCOUNT_COLLECTION, {
+        const result = await updateDocument(COLLECTION_NAMES.DISTRIBUTOR_KEY_ACCOUNTS, {
             _id: new ObjectId(accountId),
             distributorId: new ObjectId(distributorId),
             createdBy: new ObjectId(createdBy)
@@ -272,14 +262,14 @@ export const updateKeyAccountService = async ({ distributorId, accountId, create
         if (result.matchedCount === 0) {
             response = {
                 status: 0,
-                message: RESPONSE_MESSAGES.NO_DATA_FOUND,
+                message: RESPONSE_MESSAGES.DATA_NOT_FOUND,
                 statusCode: RESPONSE_CODES.NOT_FOUND,
                 data: {}
             };
         } else {
             response = {
                 status: 1,
-                message: RESPONSE_MESSAGES.ACCOUNT_DETAILS_UPDATED,
+                message: RESPONSE_MESSAGES.ACCOUNT_UPDATE_SUCCESS,
                 statusCode: RESPONSE_CODES.GET,
                 data: {}
             };

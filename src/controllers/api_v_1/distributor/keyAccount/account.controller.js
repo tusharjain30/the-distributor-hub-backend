@@ -1,8 +1,12 @@
 import { RESPONSE_CODES, RESPONSE_MESSAGES } from "../../../../../config/constants.js";
 import { RESPONSE } from "../../../../helpers/response.js";
-import { distributorDetail } from "../../../../services/api_v_1/distributor/distributor.service.js";
-import { addKeyAccountService, deleteKeyAccountService, keyAccountDetail, keyAccountListingService, updateKeyAccountService } from "../../../../services/api_v_1/distributor/keyAccount/account.service.js";
-import { userDetail } from "../../../../services/api_v_1/user.service.js";
+import { getAdoptionLevelById } from "../../../../services/api_v_1/adoptionLevel.service.js";
+import { getDistributorDetails } from "../../../../services/api_v_1/distributor/distributor.service.js";
+import { getDistributorNameById } from "../../../../services/api_v_1/distributorName.service.js";
+import { addDistributorKeyAccountService, deleteDistributorKeyAccountService, distributorKeyAccountListingService, getDistributorkeyAccountDetails, updateDistributorKeyAccountService } from "../../../../services/api_v_1/distributor/keyAccount/account.service.js";
+import { getRegionById } from "../../../../services/api_v_1/region.service.js";
+import { getStatusById } from "../../../../services/api_v_1/status.service.js";
+import { getUserDetails } from "../../../../services/api_v_1/user.service.js";
 
 export const addKeyAccountController = async (req, res) => {
     try {
@@ -10,10 +14,42 @@ export const addKeyAccountController = async (req, res) => {
         const user = req.user;
         const body = req.body;
         body.createdBy = user._id;
-        let user_info = await userDetail({ type: "limited_detail", _id: user._id });
+        let user_info = await getUserDetails({ queryType: "limited_detail", userId: user._id });
         if (user_info.status) {
-            let distributor_info = await distributorDetail({ type: "createdBy", _id: body.distributorId, createdBy: user._id });
-            if (!distributor_info.status) {
+            let account_statusId = await getStatusById({ statusId: body.statusId });
+            let account_regionId = await getRegionById({ regionId: body?.regionId });
+            let account_adoptionLevelId = await getAdoptionLevelById({ levelId: body?.adoptionLevelId });
+            let account_distributor = await getDistributorNameById({ _id: body?.distributorNameId });
+            let distributor_info = await getDistributorDetails({ queryType: "createdBy", _id: body.distributorId, createdBy: user._id });
+            if (body.regionId && !account_regionId.status) {
+                response = {
+                    status: 0,
+                    message: RESPONSE_MESSAGES.REGION_INVALID_ID,
+                    statusCode: RESPONSE_CODES.BAD_REQUEST,
+                    data: {}
+                };
+            } else if (body.adoptionLevelId && !account_adoptionLevelId.status) {
+                response = {
+                    status: 0,
+                    message: RESPONSE_MESSAGES.INVALID_LEVEL_ID,
+                    statusCode: RESPONSE_CODES.BAD_REQUEST,
+                    data: {}
+                };
+            } else if (body.distributorNameId && !account_distributor.status) {
+                response = {
+                    status: 0,
+                    message: RESPONSE_MESSAGES.INVALID_DISTRIBUTOR_NAME_ID,
+                    statusCode: RESPONSE_CODES.BAD_REQUEST,
+                    data: {}
+                };
+            } else if (!account_statusId.status) {
+                response = {
+                    status: 0,
+                    message: RESPONSE_MESSAGES.INVALID_STATUS_ID,
+                    statusCode: RESPONSE_CODES.BAD_REQUEST,
+                    data: {}
+                };
+            } else if (!distributor_info.status) {
                 response = {
                     status: 0,
                     message: RESPONSE_MESSAGES.DISTRIBUTOR_NOT_FOUND,
@@ -21,24 +57,24 @@ export const addKeyAccountController = async (req, res) => {
                     data: {}
                 };
             } else {
-                let account_email = await keyAccountDetail({ email: body.email });
-                let account_phone = await keyAccountDetail({ type: "phone", phone: body.phone });
+                let account_email = await getDistributorkeyAccountDetails({ email: body.email });
+                let account_phone = await getDistributorkeyAccountDetails({ queryType: "phone", phone: body.phone });
                 if (account_email.status) {
                     response = {
                         status: 0,
-                        message: RESPONSE_MESSAGES.ACCOUNT_EMAIL_IS_ALREADY_EXISTS,
+                        message: RESPONSE_MESSAGES.ACCOUNT_EMAIL_EXISTS,
                         statusCode: RESPONSE_CODES.ALREADY_EXIST,
                         data: {}
                     };
                 } else if (account_phone.status) {
                     response = {
                         status: 0,
-                        message: RESPONSE_MESSAGES.ACCOUNT_PHONE_IS_ALREADY_EXISTS,
+                        message: RESPONSE_MESSAGES.ACCOUNT_PHONE_EXISTS,
                         statusCode: RESPONSE_CODES.ALREADY_EXIST,
                         data: {}
                     };
                 } else {
-                    response = await addKeyAccountService(body);
+                    response = await addDistributorKeyAccountService(body);
                 };
             };
         } else {
@@ -66,9 +102,9 @@ export const keyAccountListingController = async (req, res) => {
         const user = req.user;
         const body = req.validatedQuery;
         body.createdBy = user._id;
-        let user_info = await userDetail({ type: "limited_detail", _id: body.createdBy });
+        let user_info = await getUserDetails({ queryType: "limited_detail", userId: body.createdBy });
         if (user_info.status) {
-            let distributor_info = await distributorDetail({ type: "createdBy", _id: body.distributorId, createdBy: body.createdBy });
+            let distributor_info = await getDistributorDetails({ queryType: "createdBy", _id: body.distributorId, createdBy: body.createdBy });
             if (!distributor_info.status) {
                 response = {
                     status: 0,
@@ -77,7 +113,7 @@ export const keyAccountListingController = async (req, res) => {
                     data: {}
                 };
             } else {
-                response = await keyAccountListingService({ ...body, createdBy: body.createdBy });
+                response = await distributorKeyAccountListingService({ ...body, createdBy: body.createdBy });
             };
         } else {
             response = {
@@ -104,9 +140,9 @@ export const deleteKeyAccountController = async (req, res) => {
         const user = req.user;
         const body = req.body;
         body.createdBy = user._id;
-        let user_info = await userDetail({ type: "limited_detail", _id: body.createdBy });
+        let user_info = await getUserDetails({ queryType: "limited_detail", userId: body.createdBy });
         if (user_info.status) {
-            let distributor_info = await distributorDetail({ type: "createdBy", _id: body.distributorId, createdBy: user._id });
+            let distributor_info = await getDistributorDetails({ queryType: "createdBy", _id: body.distributorId, createdBy: user._id });
             if (!distributor_info.status) {
                 response = {
                     status: 0,
@@ -115,9 +151,9 @@ export const deleteKeyAccountController = async (req, res) => {
                     data: {}
                 };
             } else {
-                let account_info = await keyAccountDetail({ type: "distributorId_createdBy", _id: body.accountId, distributorId: body.distributorId, createdBy: body.createdBy });
+                let account_info = await getDistributorkeyAccountDetails({ queryType: "distributorId_createdBy", _id: body.accountId, distributorId: body.distributorId, createdBy: body.createdBy });
                 if (account_info.status) {
-                    response = await deleteKeyAccountService(body);
+                    response = await deleteDistributorKeyAccountService(body);
                 } else {
                     response = {
                         status: 0,
@@ -152,9 +188,9 @@ export const updateKeyAccountController = async (req, res) => {
         const user = req.user;
         const body = req.body;
         body.createdBy = user._id;
-        let user_info = await userDetail({ type: "limited_detail", _id: body.createdBy });
+        let user_info = await getUserDetails({ queryType: "limited_detail", userId: body.createdBy });
         if (user_info.status) {
-            let distributor_info = await distributorDetail({ type: "createdBy", _id: body.distributorId, createdBy: user._id });
+            let distributor_info = await getDistributorDetails({ queryType: "createdBy", _id: body.distributorId, createdBy: user._id });
             if (!distributor_info.status) {
                 response = {
                     status: 0,
@@ -163,26 +199,26 @@ export const updateKeyAccountController = async (req, res) => {
                     data: {}
                 };
             } else {
-                let account_info = await keyAccountDetail({ type: "distributorId_createdBy", _id: body.accountId, distributorId: body.distributorId, createdBy: body.createdBy });
+                let account_info = await getDistributorkeyAccountDetails({ queryType: "distributorId_createdBy", _id: body.accountId, distributorId: body.distributorId, createdBy: body.createdBy });
                 if (account_info.status) {
-                    let account_email = await keyAccountDetail({ type: "email_not_equal", email: body.email, _id: body.accountId });
-                    let account_phone = await keyAccountDetail({ type: "phone_not_equal", phone: body.phone, _id: body.accountId });
+                    let account_email = await getDistributorkeyAccountDetails({ queryType: "emailNotEqual", email: body.email, _id: body.accountId });
+                    let account_phone = await getDistributorkeyAccountDetails({ queryType: "phoneNotEqual", phone: body.phone, _id: body.accountId });
                     if (account_email.status) {
                         response = {
                             status: 0,
-                            message: RESPONSE_MESSAGES.ACCOUNT_EMAIL_IS_ALREADY_EXISTS,
+                            message: RESPONSE_MESSAGES.ACCOUNT_EMAIL_EXISTS,
                             statusCode: RESPONSE_CODES.ALREADY_EXIST,
                             data: {}
                         };
                     } else if (account_phone.status) {
                         response = {
                             status: 0,
-                            message: RESPONSE_MESSAGES.ACCOUNT_PHONE_IS_ALREADY_EXISTS,
+                            message: RESPONSE_MESSAGES.ACCOUNT_PHONE_EXISTS,
                             statusCode: RESPONSE_CODES.ALREADY_EXIST,
                             data: {}
                         };
                     } else {
-                        response = await updateKeyAccountService({ ...body, updatedBy: user._id });
+                        response = await updateDistributorKeyAccountService({ ...body, updatedBy: user._id });
                     };
                 } else {
                     response = {
@@ -218,9 +254,9 @@ export const getKeyAccountDetailsController = async (req, res) => {
         const user = req.user;
         const body = req.validatedQuery;
         body.createdBy = user._id;
-        let user_info = await userDetail({ type: "limited_detail", _id: body.createdBy });
+        let user_info = await getUserDetails({ queryType: "limited_detail", userId: body.createdBy });
         if (user_info.status) {
-            let distributor_info = await distributorDetail({ type: "createdBy", _id: body.distributorId, createdBy: user._id });
+            let distributor_info = await getDistributorDetails({ queryType: "createdBy", _id: body.distributorId, createdBy: user._id });
             if (!distributor_info.status) {
                 response = {
                     status: 0,
@@ -229,7 +265,7 @@ export const getKeyAccountDetailsController = async (req, res) => {
                     data: {}
                 };
             } else {
-                let account_info = await keyAccountDetail({ type: "distributorId_createdBy", _id: body.accountId, distributorId: body.distributorId, createdBy: body.createdBy });
+                let account_info = await getDistributorkeyAccountDetails({ queryType: "distributorId_createdBy", _id: body.accountId, distributorId: body.distributorId, createdBy: body.createdBy });
                 if (account_info.status) {
                     response = account_info;
                 } else {
@@ -240,7 +276,7 @@ export const getKeyAccountDetailsController = async (req, res) => {
                         data: {}
                     };
                 }
-            }
+            };
         } else {
             response = {
                 status: 0,

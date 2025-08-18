@@ -40,34 +40,31 @@ export const addKeyAccountSchema = Joi.object({
         'number.precision': 'Value must have no more than 2 decimal places.',
         'any.required': 'Value is required.',
     }),
-    status: Joi.string().trim().valid("active", "inactive", "pending").required().messages({
-        'string.base': 'Status should be a type of text',
-        'any.only': 'Status must be one of {{#valids}}',
-        'any.required': 'Status is a required field',
+    statusId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).required().messages({
+        'string.base': 'Status ID should be a type of text',
+        'string.empty': 'Status ID cannot be empty',
+        'string.pattern.base': 'Status ID must be a valid MongoDB ObjectId',
+        'any.required': 'Status ID is a required field',
     }),
-    region: Joi.string().trim().min(2).max(50).optional().default(null).messages({
-        'string.base': 'Region should be a type of text',
-        'string.empty': 'Region cannot be empty',
-        'string.min': 'Region have a minimum length of {#limit}',
-        'string.max': 'Region should have a maximum length of {#limit}',
-        'any.required': 'Region is required.'
+    regionId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).optional().messages({
+        'string.base': 'Region ID should be a type of text',
+        'string.empty': 'Region ID cannot be empty',
+        'string.pattern.base': 'Region ID must be a valid MongoDB ObjectId'
     }),
-    adoptionLevel: Joi.string().trim().min(2).max(50).optional().default("no contact").messages({
-        'string.base': 'Adoption level should be a type of text',
-        'string.empty': 'Adoption level cannot be empty',
-        'string.min': 'Adoption level have a minimum length of {#limit}',
-        'string.max': 'Adoption level should have a maximum length of {#limit}',
+    adoptionLevelId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).optional().messages({
+        'string.base': 'Adoption level ID should be a type of text',
+        'string.empty': 'Adoption level ID cannot be empty',
+        'string.pattern.base': 'Adoption level ID must be a valid MongoDB ObjectId',
     }),
     lastContact: Joi.string().trim().optional().default(null).messages({
         'string.base': 'Last contact should be a type of text',
         'string.empty': 'Last contact  cannot be empty',
     }),
-    distributor: Joi.string().trim().min(2).max(50).optional().default(null).messages({
-        'string.base': 'Distributor should be a type of text',
-        'string.empty': 'Distributor cannot be empty',
-        'string.min': 'Distributor have a minimum length of {#limit}',
-        'string.max': 'Distributor should have a maximum length of {#limit}',
-    }),
+    distributorNameId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).optional().messages({
+        'string.base': 'Distributor Role ID should be a type of text',
+        'string.empty': 'Distributor Role ID cannot be empty',
+        'string.pattern.base': 'Distributor Role ID must be a valid MongoDB ObjectId'
+    })
 });
 
 export const keyAccountListingQuerySchema = Joi.object({

@@ -13,64 +13,98 @@ export const RESPONSE_CODES = {
 };
 
 export const RESPONSE_MESSAGES = {
-	USER_DETAIL: "User details fetched",
-	REGISTER_SUCCESS: "Register successfully",
-	USER_FAILED_TO_REGISTER: "User failed to register",
-	USER_DETAILS_FETCHED: "User details fetched",
-	USER_UPDATED: "User updated successfully",
-	REGISTER_SUCCESS: "Register successfully",
-	LOGIN_SUCCESS: "Login successfully",
-	FOUND: "Found",
-	NO_DATA_FOUND: "Not data found",
+	// User
+	USER_FETCH_SUCCESS: "User details fetched successfully",
+	USER_REGISTER_SUCCESS: "User registered successfully",
+	USER_REGISTER_FAILED: "User registration failed",
+	USER_UPDATE_SUCCESS: "User updated successfully",
+	USER_UPDATE_FAILED: "Failed to update user",
 	USER_NOT_FOUND: "User not found",
-	INVALID_EMAIL: "Invalid Email",
-	INVALID_ROLE: "Invalid Role",
-	EMAIL_ALREADY_REGISTERED: "Email already registered, please try another email",
-	PROFILE_UPDATED: "Profile updated successfully",
-	FAILED_TO_UPDATE_PROFILE: "Failed to update profile",
-	DISTRIBUTOR_ADDED: "Distributor added",
-	FAILED_TO_ADD_DISTRIBUTOR: "Failed to add distributor",
-	DISTRIBUTOR_EMAIL_IS_ALREADY_Exists: "Distributor email is already exists, please try another email",
-	DISTRIBUTOR_PHONE_NUMBER_IS_ALREADY_Exists: "Distributor phone number is already exists, please try another phone number",
+	USER_EMAIL_EXISTS: "Email already registered, please try another email",
+	USER_INVALID_EMAIL: "Invalid email address",
+	USER_INVALID_ROLE: "Invalid role",
+
+	// Auth
+	LOGIN_SUCCESS: "Login successful",
+
+	// Generic
+	DATA_FOUND: "Data found",
+	DATA_NOT_FOUND: "No data found",
+	FETCH_SUCCESS: "Data fetched successfully",
+	FETCH_FAILED: "Failed to fetch data",
+
+	// Distributor
+	DISTRIBUTOR_FETCH_SUCCESS: "Distributor details fetched successfully",
+	DISTRIBUTOR_ADD_SUCCESS: "Distributor added successfully",
+	DISTRIBUTOR_ADD_FAILED: "Failed to add distributor",
+	DISTRIBUTOR_UPDATE_SUCCESS: "Distributor details updated successfully",
+	DISTRIBUTOR_UPDATE_FAILED: "Failed to update distributor details",
+	DISTRIBUTOR_DELETE_SUCCESS: "Distributor deleted successfully",
 	DISTRIBUTOR_NOT_FOUND: "Distributor not found",
-	DISTRIBUTOR_DETAILS_UPDATED: "Distributor details updated",
-	FAILED_TO_UPDATE_DISTRIBUTOR_DETAILS: "Failed to update distributor details",
-	DISTRIBUTOR_DELETED: "Distributor deleted successfully",
-	FETCHED: "Fetched",
-	CONTACT_ADDED: "Contact Added",
-	FAILED_TO_ADD_CONTACT: "Failed to add contact",
-	CONTACT_EMAIL_IS_ALREADY_Exists: "Contact email is already exists, please try another email",
-	CONTACT_PHONE_NUMBER_IS_ALREADY_Exists: "Contact phone number is already exists, please try another phone number",
-	SUCCESSFULLY_MARKED_CONTACT_AS_PRIMARY: "Successfully marked contact as primary.",
+	DISTRIBUTOR_EMAIL_EXISTS: "Distributor email already exists, please try another",
+	DISTRIBUTOR_PHONE_EXISTS: "Distributor phone number already exists, please try another",
+
+	// Contact
+	CONTACT_FETCH_SUCCESS: "Contact details fetched successfully",
+	CONTACT_ADD_SUCCESS: "Contact added successfully",
+	CONTACT_ADD_FAILED: "Failed to add contact",
+	CONTACT_DELETE_SUCCESS: "Contact deleted successfully",
 	CONTACT_NOT_FOUND: "Contact not found",
-	CONTACT_DELETED: "Contact deleted successfully",
-	MAKE_ONE_CONTACT_PRIMARY_BEFORE_DELETING_THE_PRIMARY_CONTACT: "Make one contact primary before deleting the primary contact",
-	NOTE_ADDED: "Note added",
-	FAILED_TO_ADD_NOTE: "Failed to add note",
-	NOTE_DELETED: "Note deleted",
-	NOTE_DETAILS_FETCHED: "Note details fetched",
+	CONTACT_EMAIL_EXISTS: "Contact email already exists, please try another",
+	CONTACT_PHONE_EXISTS: "Contact phone number already exists, please try another",
+	CONTACT_MARK_PRIMARY_SUCCESS: "Contact marked as primary successfully",
+	CONTACT_PRIMARY_DELETE_ERROR: "Assign another primary contact before deleting the current one",
+
+	// Note
+	NOTE_FETCH_SUCCESS: "Note details fetched successfully",
+	NOTE_ADD_SUCCESS: "Note added successfully",
+	NOTE_ADD_FAILED: "Failed to add note",
+	NOTE_DELETE_SUCCESS: "Note deleted successfully",
+	NOTE_FETCH_SUCCESS: "Note details fetched successfully",
 	NOTE_NOT_FOUND: "Note not found",
-	ACCOUNT_DETAILS_FETCHED: "Account details fetched",
+
+	// Account
+	ACCOUNT_FETCH_SUCCESS: "Account details fetched successfully",
+	ACCOUNT_ADD_SUCCESS: "Account added successfully",
+	ACCOUNT_ADD_FAILED: "Failed to add account",
+	ACCOUNT_UPDATE_SUCCESS: "Account details updated successfully",
+	ACCOUNT_DELETE_SUCCESS: "Account deleted successfully",
 	ACCOUNT_NOT_FOUND: "Account not found",
-	ACCOUNT_EMAIL_IS_ALREADY_EXISTS: "Account email is already exists",
-	ACCOUNT_PHONE_IS_ALREADY_EXISTS: "Account phone number is already exists",
-	ACCOUNT_ADDED: "Account added successfully",
-	FAILED_TO_ADD_ACCOUNT: "Failed to add account",
-	ACCOUNT_DELETED: "Account deleted successfully",
-	ACCOUNT_DETAILS_UPDATED: "Account details updated",
-	ACCOUNT_CONTACT_DETAILS_FETCHED: "Account contact details fetched"
+	ACCOUNT_EMAIL_EXISTS: "Account email already exists",
+	ACCOUNT_PHONE_EXISTS: "Account phone number already exists",
+	ACCOUNT_FETCH_SUCCESS: "Account details fetched successfully",
+	ACCOUNT_CONTACT_FETCH_SUCCESS: "Account contact details fetched successfully",
+
+	// Region
+	REGION_INVALID_ID: "Invalid region id",
+	REGION_FETCH_SUCCESS: "Region details fetched successfully",
+
+	// Status
+	INVALID_STATUS_ID: "Invalid Status id",
+	STATUS_FETCH_SUCCESS: "Status details fetched successfully",
+	
+	// Adoption Levels
+	INVALID_LEVEL_ID: "Invalid adoption level id",
+	ADOPTION_LEVEL_FETCH_SUCCESS: "Adoption level details fetched successfully",
+
+	// distributor names
+	INVALID_DISTRIBUTOR_NAME_ID: "Invalid distributor name id",
+	DISTRIBUTOR_NAME_FETCH_SUCCESS: "distributor name details fetched successfully",
 };
 
 export const COLLECTION_NAMES = {
-	USER_COLLECTION: "Users",
-	DISTRIBUTOR_COLLECTION: "Distributors",
-	DISTRIBUTOR_CONTACT_COLLECTION: "Distributor_Contacts",
-	DISTRIBUTOR_NOTE_COLLECTION: "Distributor_Notes",
-	DISTRIBUTOR_KEY_ACCOUNT_COLLECTION: "Distributor_Key_Accounts",
-	KEY_ACCOUNT_CONTACT_COLLECTION: "Key_Account_Contacts",
-	KEY_ACCOUNT_NOTE_COLLECTION: "Key_Account_Notes",
-	DISTRIBUTOR_INVENTORY_COLLECTION: "Distributor_Inventory",
-	DISTRIBUTOR_SALES_DATA_COLLECTION: "Distributor_Sales_Data",
+	USERS: "users",
+	DISTRIBUTORS: "distributors",
+	DISTRIBUTOR_CONTACTS: "distributor_contacts",
+	DISTRIBUTOR_NOTES: "distributor_notes",
+	DISTRIBUTOR_KEY_ACCOUNTS: "distributor_key_accounts",
+	KEY_ACCOUNT_CONTACTS: "key_account_contacts",
+	KEY_ACCOUNT_NOTES: "key_account_notes",
+	DISTRIBUTOR_INVENTORY: "distributor_inventory",
+	DISTRIBUTOR_SALES: "distributor_sales",
+	REGIONS: "regions",
+	STATUS: "status",
+	ADOPTION_LEVELS: "adoptionLevels",
+	DISTRIBUTOR_NAMES: "distributor_names",
 };
-
 

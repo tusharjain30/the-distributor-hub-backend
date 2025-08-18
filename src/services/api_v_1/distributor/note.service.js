@@ -2,43 +2,46 @@ import { ObjectId } from "mongodb";
 import { COLLECTION_NAMES, RESPONSE_CODES, RESPONSE_MESSAGES } from "../../../../config/constants.js";
 import { RESPONSE } from "../../../helpers/response.js";
 import moment from "moment-timezone";
-import { aggregate, findOne, insertOne, updateOne } from "../../../../config/dbMethods.js";
+import { aggregateDocuments, findOneDocument, insertDocument, updateDocument } from "../../../../config/dbMethods.js";
 
-export const noteDetail = async ({ type, _id, createdBy, distributorId }) => {
+export const getDistributorNoteDetails = async ({ queryType, _id, createdBy, distributorId }) => {
     try {
         let response = RESPONSE;
-        const note_params = {
+        const queryFilter = {
             isDeleted: false
         };
-        let project = {};
+        let projection = {};
 
-        if (type === 'id') {
-            note_params._id = new ObjectId(_id);
-        } else if (type === 'createdBy') {
-            note_params.createdBy = new ObjectId(createdBy);
-            note_params.distributorId = new ObjectId(distributorId);
-            note_params._id = new ObjectId(_id);
-        } else if (type === 'limited_detail') {
-            note_params._id = new ObjectId(_id);
-            project = {
-                _id: 1,
-                content: 1,
-                distributorId: 1,
-                createdBy: 1
-            };
+        const LIMITED_DETAIL_PROJECTION = {
+            _id: 1,
+            content: 1,
+            distributorId: 1,
+            createdBy: 1
         };
-        const note_details = await findOne(COLLECTION_NAMES.DISTRIBUTOR_NOTE_COLLECTION, note_params, project);
+
+        if (queryType === 'id') {
+            queryFilter._id = new ObjectId(_id);
+        } else if (queryType === 'createdBy') {
+            queryFilter.createdBy = new ObjectId(createdBy);
+            queryFilter.distributorId = new ObjectId(distributorId);
+            queryFilter._id = new ObjectId(_id);
+            projection = LIMITED_DETAIL_PROJECTION;
+        } else if (queryType === 'limited_detail') {
+            queryFilter._id = new ObjectId(_id);
+            projection = LIMITED_DETAIL_PROJECTION;
+        };
+        const note_details = await findOneDocument(COLLECTION_NAMES.DISTRIBUTOR_NOTES, queryFilter, projection);
         if (note_details) {
             response = {
                 status: 1,
-                message: RESPONSE_MESSAGES.NOTE_DETAILS_FETCHED,
+                message: RESPONSE_MESSAGES.NOTE_FETCH_SUCCESS,
                 statusCode: RESPONSE_CODES.GET,
                 data: note_details
             };
         } else {
             response = {
                 status: 0,
-                message: RESPONSE_MESSAGES.NO_DATA_FOUND,
+                message: RESPONSE_MESSAGES.DATA_NOT_FOUND,
                 statusCode: RESPONSE_CODES.NOT_FOUND,
                 data: {}
             };
@@ -54,13 +57,13 @@ export const noteDetail = async ({ type, _id, createdBy, distributorId }) => {
     };
 };
 
-export const addNoteService = async ({ content, distributorId, createdBy }) => {
+export const addDistributorNoteService = async ({ content, distributorId, createdBy }) => {
     try {
         let response = RESPONSE;
         const currentTime = parseInt(moment().tz(process.env.TIMEZONE).format("x"));
         distributorId = new ObjectId(distributorId);
         createdBy = new ObjectId(createdBy);
-        const result = await insertOne(COLLECTION_NAMES.DISTRIBUTOR_NOTE_COLLECTION, {
+        const result = await insertDocument(COLLECTION_NAMES.DISTRIBUTOR_NOTES, {
             content,
             distributorId: new ObjectId(distributorId),
             createdBy: new ObjectId(createdBy),
@@ -69,17 +72,17 @@ export const addNoteService = async ({ content, distributorId, createdBy }) => {
             updatedAt: currentTime
         });
         if (result.acknowledged) {
-            await updateOne(COLLECTION_NAMES.DISTRIBUTOR_COLLECTION, { _id: distributorId, createdBy }, { $inc: { notes: 1 } });
+            await updateDocument(COLLECTION_NAMES.DISTRIBUTORS, { _id: distributorId, createdBy }, { $inc: { notes: 1 } });
             response = {
                 status: 1,
-                message: RESPONSE_MESSAGES.NOTE_ADDED,
+                message: RESPONSE_MESSAGES.NOTE_ADD_SUCCESS,
                 statusCode: RESPONSE_CODES.POST,
                 data: { insertedId: result.insertedId }
             };
         } else {
             response = {
                 status: 0,
-                message: RESPONSE_MESSAGES.FAILED_TO_ADD_NOTE,
+                message: RESPONSE_MESSAGES.NOTE_ADD_FAILED,
                 statusCode: RESPONSE_CODES.BAD_REQUEST,
                 data: {}
             };
@@ -95,7 +98,7 @@ export const addNoteService = async ({ content, distributorId, createdBy }) => {
     };
 };
 
-export const noteListingService = async ({ page, limit, distributorId, createdBy }) => {
+export const distributorNoteListingService = async ({ page, limit, distributorId, createdBy }) => {
     try {
         let response = RESPONSE;
         let skip = (page - 1) * limit;
@@ -103,12 +106,13 @@ export const noteListingService = async ({ page, limit, distributorId, createdBy
             {
                 $match: {
                     createdBy: new ObjectId(createdBy),
-                    distributorId: new ObjectId(distributorId)
+                    distributorId: new ObjectId(distributorId),
+                    isDeleted: false
                 }
             },
             {
                 $lookup: {
-                    from: "Users",
+                    from: COLLECTION_NAMES.USERS,
                     let: { targetUserId: "$createdBy" },
                     pipeline: [
                         {
@@ -133,14 +137,21 @@ export const noteListingService = async ({ page, limit, distributorId, createdBy
             {
                 $unwind: "$createdBy"
             },
+            {
+                $project: {
+                    content: 1,
+                    createdBy: "$createdBy.name",
+                    createdAt: 1
+                }
+            },
             { $skip: skip },
             { $limit: limit }
         ];
 
-        const result = await aggregate(COLLECTION_NAMES.DISTRIBUTOR_NOTE_COLLECTION, pipeline);
+        const result = await aggregateDocuments(COLLECTION_NAMES.DISTRIBUTOR_NOTES, pipeline);
         response = {
             status: 1,
-            message: RESPONSE_MESSAGES.FETCHED,
+            message: RESPONSE_MESSAGES.FETCH_SUCCESS,
             statusCode: RESPONSE_CODES.GET,
             data: result
         };
@@ -155,14 +166,14 @@ export const noteListingService = async ({ page, limit, distributorId, createdBy
     };
 };
 
-export const deleteNoteService = async ({ createdBy, distributorId, noteId }) => {
+export const deleteDistributorNoteService = async ({ createdBy, distributorId, noteId }) => {
     try {
         let response = RESPONSE;
         createdBy = new ObjectId(createdBy);
         distributorId = new ObjectId(distributorId);
         noteId = new ObjectId(noteId);
         const currentTime = parseInt(moment().tz(process.env.TIMEZONE).format("x"));
-        let result = await updateOne(COLLECTION_NAMES.DISTRIBUTOR_NOTE_COLLECTION, { _id: noteId, createdBy, distributorId }, {
+        let result = await updateDocument(COLLECTION_NAMES.DISTRIBUTOR_NOTES, { _id: noteId, createdBy, distributorId }, {
             $set: {
                 isDeleted: true,
                 updatedAt: currentTime
@@ -171,15 +182,15 @@ export const deleteNoteService = async ({ createdBy, distributorId, noteId }) =>
         if (result.matchedCount === 0) {
             response = {
                 status: 0,
-                message: RESPONSE_MESSAGES.NO_DATA_FOUND,
+                message: RESPONSE_MESSAGES.DATA_NOT_FOUND,
                 statusCode: RESPONSE_CODES.NOT_FOUND,
                 data: {}
             };
         } else {
-            await updateOne(COLLECTION_NAMES.DISTRIBUTOR_COLLECTION, { _id: distributorId, createdBy }, { $inc: { notes: -1 } });
+            await updateDocument(COLLECTION_NAMES.DISTRIBUTORS, { _id: distributorId, createdBy }, { $inc: { notes: -1 } });
             response = {
                 status: 1,
-                message: RESPONSE_MESSAGES.NOTE_DELETED,
+                message: RESPONSE_MESSAGES.NOTE_DELETE_SUCCESS,
                 statusCode: RESPONSE_CODES.GET,
                 data: {}
             };

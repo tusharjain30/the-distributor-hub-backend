@@ -1,63 +1,59 @@
 import { ObjectId } from "mongodb";
 import { RESPONSE } from "../../../../helpers/response.js";
 import { COLLECTION_NAMES, RESPONSE_CODES, RESPONSE_MESSAGES } from "../../../../../config/constants.js";
-import { findOne, insertOne, updateMany, updateOne } from "../../../../../config/dbMethods.js";
+import { findOneDocument, insertDocument, updateDocument, updateDocuments } from "../../../../../config/dbMethods.js";
 import moment from "moment-timezone";
 
-export const KeyAccountContactDetail = async ({ type, _id, email, phone, createdBy, distributorId, accountId }) => {
+export const getKeyAccountContactDetails = async ({ queryType, _id, email, phone, createdBy, distributorId, accountId }) => {
     try {
         let response = RESPONSE;
-        const account_contact_params = {
+        const queryFilter = {
             isDeleted: false
         };
-        let project = {};
+        let projection = {};
 
-        if (type === 'id') {
-            account_contact_params._id = new ObjectId(_id);
-        } else if (type === 'phone') {
-            account_contact_params.phone = phone;
-        } else if (type === 'limited_detail') {
-            account_contact_params._id = new ObjectId(_id);
-            project = {
-                contactName: 1,
-                email: 1,
-                phone: 1,
-                jobTitle: 1,
-                isPrimary: 1,
-            };
-        } else if (type === "distributorId_accountId_createdBy") {
-            account_contact_params._id = new ObjectId(_id);
-            account_contact_params.distributorId = new ObjectId(distributorId);
-            account_contact_params.createdBy = new ObjectId(createdBy);
-            account_contact_params.accountId = new ObjectId(accountId);
-            project = {
-                contactName: 1,
-                email: 1,
-                phone: 1,
-                jobTitle: 1,
-                isPrimary: 1,
-            };
-        } else if (type === "email_not_equal") {
-            account_contact_params.email = email.toLowerCase();
-            account_contact_params._id = { $ne: new ObjectId(_id) };
-        } else if (type === "phone_not_equal") {
-            account_contact_params.phone = phone;
-            account_contact_params._id = { $ne: new ObjectId(_id) };
-        } else {
-            account_contact_params.email = email.toLowerCase();
+        const LIMITED_DETAIL_PROJECTION = {
+            contactName: 1,
+            email: 1,
+            phone: 1,
+            jobTitle: 1,
+            isPrimary: 1,
         };
-        const contact_details = await findOne(COLLECTION_NAMES.KEY_ACCOUNT_CONTACT_COLLECTION, account_contact_params, project);
+
+        if (queryType === 'id') {
+            queryFilter._id = new ObjectId(_id);
+        } else if (queryType === 'phone') {
+            queryFilter.phone = phone;
+        } else if (queryType === 'limited_detail') {
+            queryFilter._id = new ObjectId(_id);
+            projection = LIMITED_DETAIL_PROJECTION;
+        } else if (queryType === "distributorId_accountId_createdBy") {
+            queryFilter._id = new ObjectId(_id);
+            queryFilter.distributorId = new ObjectId(distributorId);
+            queryFilter.createdBy = new ObjectId(createdBy);
+            queryFilter.accountId = new ObjectId(accountId);
+            projection = LIMITED_DETAIL_PROJECTION;
+        } else if (queryType === "emailNotEqual") {
+            queryFilter.email = email.toLowerCase();
+            queryFilter._id = { $ne: new ObjectId(_id) };
+        } else if (queryType === "phoneNotEqual") {
+            queryFilter.phone = phone;
+            queryFilter._id = { $ne: new ObjectId(_id) };
+        } else {
+            queryFilter.email = email.toLowerCase();
+        };
+        const contact_details = await findOneDocument(COLLECTION_NAMES.KEY_ACCOUNT_CONTACTS, queryFilter, projection);
         if (contact_details) {
             response = {
                 status: 1,
-                message: RESPONSE_MESSAGES.ACCOUNT_CONTACT_DETAILS_FETCHED,
+                message: RESPONSE_MESSAGES.CONTACT_FETCH_SUCCESS,
                 statusCode: RESPONSE_CODES.GET,
                 data: contact_details
             };
         } else {
             response = {
                 status: 0,
-                message: RESPONSE_MESSAGES.NO_DATA_FOUND,
+                message: RESPONSE_MESSAGES.DATA_NOT_FOUND,
                 statusCode: RESPONSE_CODES.NOT_FOUND,
                 data: {}
             };
@@ -73,7 +69,7 @@ export const KeyAccountContactDetail = async ({ type, _id, email, phone, created
     };
 };
 
-export const addKeyAccountContactservice = async ({ contactName, jobTitle, email, phone, isPrimary, distributorId, accountId, createdBy }) => {
+export const addKeyAccountContactService = async ({ contactName, jobTitle, email, phone, isPrimary, distributorId, accountId, createdBy }) => {
     try {
         let response = RESPONSE;
         const currentTime = parseInt(moment().tz(process.env.TIMEZONE).format("x"));
@@ -81,13 +77,13 @@ export const addKeyAccountContactservice = async ({ contactName, jobTitle, email
         accountId = new ObjectId(accountId);
         createdBy = new ObjectId(createdBy);
         if (isPrimary) {
-            await updateMany(COLLECTION_NAMES.KEY_ACCOUNT_CONTACT_COLLECTION, { accountId, distributorId, createdBy }, {
+            await updateDocuments(COLLECTION_NAMES.KEY_ACCOUNT_CONTACTS, { accountId, distributorId, createdBy }, {
                 $set: {
                     isPrimary: false
                 }
             });
         };
-        const result = await insertOne(COLLECTION_NAMES.KEY_ACCOUNT_CONTACT_COLLECTION, {
+        const result = await insertDocument(COLLECTION_NAMES.KEY_ACCOUNT_CONTACTS, {
             contactName,
             jobTitle,
             email,
@@ -102,17 +98,17 @@ export const addKeyAccountContactservice = async ({ contactName, jobTitle, email
             updatedAt: currentTime
         });
         if (result.acknowledged) {
-            await updateOne(COLLECTION_NAMES.DISTRIBUTOR_KEY_ACCOUNT_COLLECTION, { _id: accountId, distributorId, createdBy }, { $inc: { contacts: 1 } });
+            await updateDocument(COLLECTION_NAMES.DISTRIBUTOR_KEY_ACCOUNTS, { _id: accountId, distributorId, createdBy }, { $inc: { contacts: 1 } });
             response = {
                 status: 1,
-                message: RESPONSE_MESSAGES.CONTACT_ADDED,
+                message: RESPONSE_MESSAGES.CONTACT_ADD_SUCCESS,
                 statusCode: RESPONSE_CODES.POST,
                 data: { insertedId: result.insertedId }
             };
         } else {
             response = {
                 status: 0,
-                message: RESPONSE_MESSAGES.FAILED_TO_ADD_CONTACT,
+                message: RESPONSE_MESSAGES.CONTACT_ADD_FAILED,
                 statusCode: RESPONSE_CODES.BAD_REQUEST,
                 data: {}
             };
@@ -137,7 +133,7 @@ export const deleteKeyAccountContactService = async ({ accountId, createdBy, dis
         accountId = new ObjectId(accountId);
         const currentTime = parseInt(moment().tz(process.env.TIMEZONE).format("x"));
 
-        let result = await updateOne(COLLECTION_NAMES.KEY_ACCOUNT_CONTACT_COLLECTION, { _id: contactId, createdBy, distributorId, accountId }, {
+        let result = await updateDocument(COLLECTION_NAMES.KEY_ACCOUNT_CONTACTS, { _id: contactId, createdBy, distributorId, accountId }, {
             $set: {
                 isDeleted: true,
                 updatedAt: currentTime
@@ -146,15 +142,15 @@ export const deleteKeyAccountContactService = async ({ accountId, createdBy, dis
         if (result.matchedCount === 0) {
             response = {
                 status: 0,
-                message: RESPONSE_MESSAGES.NO_DATA_FOUND,
+                message: RESPONSE_MESSAGES.DATA_NOT_FOUND,
                 statusCode: RESPONSE_CODES.NOT_FOUND,
                 data: {}
             };
         } else {
-            await updateOne(COLLECTION_NAMES.DISTRIBUTOR_KEY_ACCOUNT_COLLECTION, { _id: accountId, createdBy, distributorId }, { $inc: { contacts: -1 } });
+            await updateDocument(COLLECTION_NAMES.DISTRIBUTOR_KEY_ACCOUNTS, { _id: accountId, createdBy, distributorId }, { $inc: { contacts: -1 } });
             response = {
                 status: 1,
-                message: RESPONSE_MESSAGES.CONTACT_DELETED,
+                message: RESPONSE_MESSAGES.CONTACT_DELETE_SUCCESS,
                 statusCode: RESPONSE_CODES.GET,
                 data: {}
             };
