@@ -1,7 +1,7 @@
 import { ObjectId } from "mongodb";
 import { RESPONSE } from "../../../../helpers/response.js";
 import { COLLECTION_NAMES, RESPONSE_CODES, RESPONSE_MESSAGES } from "../../../../../config/constants.js";
-import { findOneDocument, insertDocument, updateDocument, updateDocuments } from "../../../../../config/dbMethods.js";
+import { aggregateDocuments, findDocuments, findOneDocument, insertDocument, updateDocument, updateDocuments } from "../../../../../config/dbMethods.js";
 import moment from "moment-timezone";
 
 export const getKeyAccountContactDetails = async ({ queryType, _id, email, phone, createdBy, distributorId, accountId }) => {
@@ -154,6 +154,42 @@ export const deleteKeyAccountContactService = async ({ accountId, createdBy, dis
                 statusCode: RESPONSE_CODES.GET,
                 data: {}
             };
+        };
+        return response;
+    } catch (error) {
+        throw {
+            status: 0,
+            message: error.message,
+            statusCode: RESPONSE_CODES.ERROR,
+            data: {}
+        };
+    };
+};
+
+export const keyAccountContactListingService = async ({ distributorId, accountId, createdBy, limit, page }) => {
+    try {
+        let response = RESPONSE;
+        const filter = {
+            isDeleted: false,
+            createdBy: new ObjectId(createdBy),
+            distributorId: new ObjectId(distributorId),
+            accountId: new ObjectId(accountId)
+        };
+
+        const projection = {
+            contactName: 1,
+            jobTitle: 1,
+            email: 1,
+            phone: 1,
+            isPrimary: 1
+        };
+
+        const result = await findDocuments(COLLECTION_NAMES.KEY_ACCOUNT_CONTACTS, filter, projection, page, limit);
+        response = {
+            status: 1,
+            message: RESPONSE_MESSAGES.FETCH_SUCCESS,
+            statusCode: RESPONSE_CODES.GET,
+            data: result
         };
         return response;
     } catch (error) {

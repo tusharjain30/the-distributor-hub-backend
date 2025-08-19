@@ -1,6 +1,6 @@
 import moment from "moment-timezone";
 import { RESPONSE } from "../../../../helpers/response.js";
-import { findOneDocument, insertDocument, updateDocument } from "../../../../../config/dbMethods.js";
+import { aggregateDocuments, findOneDocument, insertDocument, updateDocument } from "../../../../../config/dbMethods.js";
 import { COLLECTION_NAMES, RESPONSE_CODES, RESPONSE_MESSAGES } from "../../../../../config/constants.js";
 import { ObjectId } from "mongodb";
 
@@ -138,6 +138,82 @@ export const deleteKeyAccountNoteService = async ({ distributorId, accountId, no
                 statusCode: RESPONSE_CODES.GET,
                 data: {}
             };
+        };
+        return response;
+    } catch (error) {
+        throw {
+            status: 0,
+            message: error.message,
+            statusCode: RESPONSE_CODES.ERROR,
+            data: {}
+        };
+    };
+};
+
+export const keyAccountNoteListingService = async ({ distributorId, accountId, createdBy, limit, page }) => {
+    try {
+        let response = RESPONSE;
+        const skip = (page - 1) * limit;
+        createdBy = new ObjectId(createdBy);
+        distributorId = new ObjectId(distributorId);
+        accountId = new ObjectId(accountId);
+
+        const pipeline = [
+            {
+                $match: {
+                    isDeleted: false,
+                    createdBy,
+                    distributorId,
+                    accountId
+                }
+            },
+            {
+                $lookup: {
+                    from: COLLECTION_NAMES.USERS,
+                    let: { targetId: "$createdBy" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ["$_id", "$$targetId"] },
+                                        { $eq: ["$isDeleted", false] }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            $project: {
+                                _id: 0,
+                                name: 1
+                            }
+                        }
+                    ],
+                    as: "createdBy"
+                },
+            },
+            {
+                $unwind: {
+                    path: "$createdBy",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $project: {
+                    note: 1,
+                    date: 1,
+                    createdBy: "$createdBy.name"
+                }
+            },
+            { $skip: skip },
+            { $limit: limit }
+        ];
+        const result = await aggregateDocuments(COLLECTION_NAMES.KEY_ACCOUNT_NOTES, pipeline);
+        response = {
+            status: 1,
+            message: RESPONSE_MESSAGES.FETCH_SUCCESS,
+            statusCode: RESPONSE_CODES.GET,
+            data: result
         };
         return response;
     } catch (error) {

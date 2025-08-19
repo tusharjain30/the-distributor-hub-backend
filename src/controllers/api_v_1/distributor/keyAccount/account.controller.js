@@ -16,10 +16,6 @@ export const addKeyAccountController = async (req, res) => {
         body.createdBy = user._id;
         let user_info = await getUserDetails({ queryType: "limited_detail", userId: user._id });
         if (user_info.status) {
-            let account_statusId = await getStatusById({ statusId: body.statusId });
-            let account_regionId = await getRegionById({ regionId: body?.regionId });
-            let account_adoptionLevelId = await getAdoptionLevelById({ levelId: body?.adoptionLevelId });
-            let account_distributor = await getDistributorNameById({ _id: body?.distributorNameId });
             let distributor_info = await getDistributorDetails({ queryType: "createdBy", _id: body.distributorId, createdBy: user._id });
             if (!distributor_info.status) {
                 response = {
@@ -28,53 +24,65 @@ export const addKeyAccountController = async (req, res) => {
                     statusCode: RESPONSE_CODES.NOT_FOUND,
                     data: {}
                 };
-            } else if (body.regionId && !account_regionId.status) {
-                response = {
-                    status: 0,
-                    message: RESPONSE_MESSAGES.REGION_INVALID_ID,
-                    statusCode: RESPONSE_CODES.BAD_REQUEST,
-                    data: {}
-                };
-            } else if (body.adoptionLevelId && !account_adoptionLevelId.status) {
-                response = {
-                    status: 0,
-                    message: RESPONSE_MESSAGES.INVALID_LEVEL_ID,
-                    statusCode: RESPONSE_CODES.BAD_REQUEST,
-                    data: {}
-                };
-            } else if (body.distributorNameId && !account_distributor.status) {
-                response = {
-                    status: 0,
-                    message: RESPONSE_MESSAGES.INVALID_DISTRIBUTOR_NAME_ID,
-                    statusCode: RESPONSE_CODES.BAD_REQUEST,
-                    data: {}
-                };
-            } else if (!account_statusId.status) {
-                response = {
-                    status: 0,
-                    message: RESPONSE_MESSAGES.INVALID_STATUS_ID,
-                    statusCode: RESPONSE_CODES.BAD_REQUEST,
-                    data: {}
-                };
             } else {
-                let account_email = await getDistributorkeyAccountDetails({ email: body.email });
-                let account_phone = await getDistributorkeyAccountDetails({ queryType: "phone", phone: body.phone });
-                if (account_email.status) {
+                let account_regionId = await getRegionById({ regionId: body?.regionId });
+                if (body.regionId && !account_regionId.status) {
                     response = {
                         status: 0,
-                        message: RESPONSE_MESSAGES.ACCOUNT_EMAIL_EXISTS,
-                        statusCode: RESPONSE_CODES.ALREADY_EXIST,
-                        data: {}
-                    };
-                } else if (account_phone.status) {
-                    response = {
-                        status: 0,
-                        message: RESPONSE_MESSAGES.ACCOUNT_PHONE_EXISTS,
-                        statusCode: RESPONSE_CODES.ALREADY_EXIST,
+                        message: RESPONSE_MESSAGES.REGION_INVALID_ID,
+                        statusCode: RESPONSE_CODES.BAD_REQUEST,
                         data: {}
                     };
                 } else {
-                    response = await addDistributorKeyAccountService(body);
+                    let account_statusId = await getStatusById({ statusId: body.statusId });
+                    if (!account_statusId.status) {
+                        response = {
+                            status: 0,
+                            message: RESPONSE_MESSAGES.INVALID_STATUS_ID,
+                            statusCode: RESPONSE_CODES.BAD_REQUEST,
+                            data: {}
+                        };
+                    } else {
+                        let account_adoptionLevelId = await getAdoptionLevelById({ levelId: body?.adoptionLevelId });
+                        if (body.adoptionLevelId && !account_adoptionLevelId.status) {
+                            response = {
+                                status: 0,
+                                message: RESPONSE_MESSAGES.INVALID_LEVEL_ID,
+                                statusCode: RESPONSE_CODES.BAD_REQUEST,
+                                data: {}
+                            };
+                        } else {
+                            let account_distributor = await getDistributorNameById({ _id: body?.distributorNameId });
+                            if (body.distributorNameId && !account_distributor.status) {
+                                response = {
+                                    status: 0,
+                                    message: RESPONSE_MESSAGES.INVALID_DISTRIBUTOR_NAME_ID,
+                                    statusCode: RESPONSE_CODES.BAD_REQUEST,
+                                    data: {}
+                                };
+                            } else {
+                                let account_email = await getDistributorkeyAccountDetails({ email: body.email });
+                                let account_phone = await getDistributorkeyAccountDetails({ queryType: "phone", phone: body.phone });
+                                if (account_email.status) {
+                                    response = {
+                                        status: 0,
+                                        message: RESPONSE_MESSAGES.ACCOUNT_EMAIL_EXISTS,
+                                        statusCode: RESPONSE_CODES.ALREADY_EXIST,
+                                        data: {}
+                                    };
+                                } else if (account_phone.status) {
+                                    response = {
+                                        status: 0,
+                                        message: RESPONSE_MESSAGES.ACCOUNT_PHONE_EXISTS,
+                                        statusCode: RESPONSE_CODES.ALREADY_EXIST,
+                                        data: {}
+                                    };
+                                } else {
+                                    response = await addDistributorKeyAccountService(body);
+                                };
+                            };
+                        };
+                    };
                 };
             };
         } else {
@@ -191,10 +199,6 @@ export const updateKeyAccountController = async (req, res) => {
         let user_info = await getUserDetails({ queryType: "limited_detail", userId: body.createdBy });
         if (user_info.status) {
             let distributor_info = await getDistributorDetails({ queryType: "createdBy", _id: body.distributorId, createdBy: user._id });
-            let account_regionId = await getRegionById({ regionId: body.regionId });
-            let account_adoptionLevelId = await getAdoptionLevelById({ levelId: body.adoptionLevelId });
-            let account_distributor = await getDistributorNameById({ _id: body.distributorNameId });
-            let account_statusId = await getStatusById({ statusId: body.statusId });
             if (!distributor_info.status) {
                 response = {
                     status: 0,
@@ -202,62 +206,74 @@ export const updateKeyAccountController = async (req, res) => {
                     statusCode: RESPONSE_CODES.NOT_FOUND,
                     data: {}
                 };
-            } else if (!account_regionId.status) {
-                response = {
-                    status: 0,
-                    message: RESPONSE_MESSAGES.REGION_INVALID_ID,
-                    statusCode: RESPONSE_CODES.BAD_REQUEST,
-                    data: {}
-                };
-            } else if (!account_adoptionLevelId.status) {
-                response = {
-                    status: 0,
-                    message: RESPONSE_MESSAGES.INVALID_LEVEL_ID,
-                    statusCode: RESPONSE_CODES.BAD_REQUEST,
-                    data: {}
-                };
-            } else if (!account_distributor.status) {
-                response = {
-                    status: 0,
-                    message: RESPONSE_MESSAGES.INVALID_DISTRIBUTOR_NAME_ID,
-                    statusCode: RESPONSE_CODES.BAD_REQUEST,
-                    data: {}
-                };
-            } else if (!account_statusId.status) {
-                response = {
-                    status: 0,
-                    message: RESPONSE_MESSAGES.INVALID_STATUS_ID,
-                    statusCode: RESPONSE_CODES.BAD_REQUEST,
-                    data: {}
-                };
             } else {
-                let account_info = await getDistributorkeyAccountDetails({ queryType: "distributorId_createdBy", _id: body.accountId, distributorId: body.distributorId, createdBy: body.createdBy });
-                if (account_info.status) {
-                    let account_email = await getDistributorkeyAccountDetails({ queryType: "emailNotEqual", email: body.email, _id: body.accountId });
-                    let account_phone = await getDistributorkeyAccountDetails({ queryType: "phoneNotEqual", phone: body.phone, _id: body.accountId });
-                    if (account_email.status) {
+                let account_regionId = await getRegionById({ regionId: body.regionId });
+                if (!account_regionId.status) {
+                    response = {
+                        status: 0,
+                        message: RESPONSE_MESSAGES.REGION_INVALID_ID,
+                        statusCode: RESPONSE_CODES.BAD_REQUEST,
+                        data: {}
+                    };
+                } else {
+                    let account_adoptionLevelId = await getAdoptionLevelById({ levelId: body.adoptionLevelId });
+                    if (!account_adoptionLevelId.status) {
                         response = {
                             status: 0,
-                            message: RESPONSE_MESSAGES.ACCOUNT_EMAIL_EXISTS,
-                            statusCode: RESPONSE_CODES.ALREADY_EXIST,
-                            data: {}
-                        };
-                    } else if (account_phone.status) {
-                        response = {
-                            status: 0,
-                            message: RESPONSE_MESSAGES.ACCOUNT_PHONE_EXISTS,
-                            statusCode: RESPONSE_CODES.ALREADY_EXIST,
+                            message: RESPONSE_MESSAGES.INVALID_LEVEL_ID,
+                            statusCode: RESPONSE_CODES.BAD_REQUEST,
                             data: {}
                         };
                     } else {
-                        response = await updateDistributorKeyAccountService({ ...body, updatedBy: user._id });
-                    };
-                } else {
-                    response = {
-                        status: 0,
-                        message: RESPONSE_MESSAGES.ACCOUNT_NOT_FOUND,
-                        statusCode: RESPONSE_CODES.NOT_FOUND,
-                        data: {}
+                        let account_distributor = await getDistributorNameById({ _id: body.distributorNameId });
+                        if (!account_distributor.status) {
+                            response = {
+                                status: 0,
+                                message: RESPONSE_MESSAGES.INVALID_DISTRIBUTOR_NAME_ID,
+                                statusCode: RESPONSE_CODES.BAD_REQUEST,
+                                data: {}
+                            };
+                        } else {
+                            let account_statusId = await getStatusById({ statusId: body.statusId });
+                            if (!account_statusId.status) {
+                                response = {
+                                    status: 0,
+                                    message: RESPONSE_MESSAGES.INVALID_STATUS_ID,
+                                    statusCode: RESPONSE_CODES.BAD_REQUEST,
+                                    data: {}
+                                };
+                            } else {
+                                let account_info = await getDistributorkeyAccountDetails({ queryType: "distributorId_createdBy", _id: body.accountId, distributorId: body.distributorId, createdBy: body.createdBy });
+                                if (account_info.status) {
+                                    let account_email = await getDistributorkeyAccountDetails({ queryType: "emailNotEqual", email: body.email, _id: body.accountId });
+                                    let account_phone = await getDistributorkeyAccountDetails({ queryType: "phoneNotEqual", phone: body.phone, _id: body.accountId });
+                                    if (account_email.status) {
+                                        response = {
+                                            status: 0,
+                                            message: RESPONSE_MESSAGES.ACCOUNT_EMAIL_EXISTS,
+                                            statusCode: RESPONSE_CODES.ALREADY_EXIST,
+                                            data: {}
+                                        };
+                                    } else if (account_phone.status) {
+                                        response = {
+                                            status: 0,
+                                            message: RESPONSE_MESSAGES.ACCOUNT_PHONE_EXISTS,
+                                            statusCode: RESPONSE_CODES.ALREADY_EXIST,
+                                            data: {}
+                                        };
+                                    } else {
+                                        response = await updateDistributorKeyAccountService({ ...body, updatedBy: user._id });
+                                    };
+                                } else {
+                                    response = {
+                                        status: 0,
+                                        message: RESPONSE_MESSAGES.ACCOUNT_NOT_FOUND,
+                                        statusCode: RESPONSE_CODES.NOT_FOUND,
+                                        data: {}
+                                    };
+                                };
+                            };
+                        };
                     };
                 };
             };
