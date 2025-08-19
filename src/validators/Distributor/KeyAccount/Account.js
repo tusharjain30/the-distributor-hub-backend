@@ -56,14 +56,13 @@ export const addKeyAccountSchema = Joi.object({
         'string.empty': 'Adoption level ID cannot be empty',
         'string.pattern.base': 'Adoption level ID must be a valid MongoDB ObjectId',
     }),
-    lastContact: Joi.string().trim().optional().default(null).messages({
-        'string.base': 'Last contact should be a type of text',
-        'string.empty': 'Last contact  cannot be empty',
+    lastContact: Joi.string().pattern(/^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])\/\d{4}$/).optional().default(null).messages({
+        "string.pattern.base": "Last Contact must be in MM/DD/YYYY format"
     }),
     distributorNameId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).optional().messages({
-        'string.base': 'Distributor Role ID should be a type of text',
-        'string.empty': 'Distributor Role ID cannot be empty',
-        'string.pattern.base': 'Distributor Role ID must be a valid MongoDB ObjectId'
+        'string.base': 'Distributor name ID should be a type of text',
+        'string.empty': 'Distributor name ID cannot be empty',
+        'string.pattern.base': 'Distributor name ID must be a valid MongoDB ObjectId'
     })
 });
 
@@ -77,14 +76,38 @@ export const keyAccountListingQuerySchema = Joi.object({
     search: Joi.string().trim().allow("").messages({
         "string.base": "Search must be a string"
     }),
-    region: Joi.string().trim().allow("all", "").messages({
-        "string.base": "Region must be a string"
+    regionId: Joi.alternatives().try(
+        Joi.string().valid("all").messages({
+            "any.only": "Region ID must be 'all' or a valid ObjectId",
+        }),
+        Joi.string().pattern(/^[0-9a-fA-F]{24}$/).messages({
+            "string.pattern.base": "Region ID must be a valid MongoDB ObjectId"
+        })
+    ).optional().messages({
+        'string.empty': 'Region ID cannot be empty',
+        "alternatives.match": "Region ID must be either 'all' or a valid MongoDB ObjectId"
     }),
-    status: Joi.string().valid("active", "inactive", "pending", "all").messages({
-        "any.only": "Status must be one of 'active', 'inactive', 'pending',  or 'all'"
+    statusId: Joi.alternatives().try(
+        Joi.string().valid("all").messages({
+            "any.only": "Status ID must be 'all' or a valid ObjectId",
+        }),
+        Joi.string().pattern(/^[0-9a-fA-F]{24}$/).messages({
+            "string.pattern.base": "Status ID must be a valid MongoDB ObjectId"
+        })
+    ).optional().messages({
+        'string.empty': 'Status ID cannot be empty',
+        "alternatives.match": "Status ID must be either 'all' or a valid MongoDB ObjectId"
     }),
-    distributor: Joi.string().trim().allow("all", "").messages({
-        "string.base": "Distributor must be a string"
+    distributorNameId: Joi.alternatives().try(
+        Joi.string().valid("all").messages({
+            "any.only": "Distributor name ID must be 'all' or a valid ObjectId",
+        }),
+        Joi.string().pattern(/^[0-9a-fA-F]{24}$/).messages({
+            "string.pattern.base": "Distributor name ID must be a valid MongoDB ObjectId"
+        })
+    ).optional().messages({
+        'string.empty': 'Distributor name ID cannot be empty',
+        "alternatives.match": "Distributor name ID must be either 'all' or a valid MongoDB ObjectId"
     }),
     page: Joi.number().integer().min(1).default(1).messages({
         'number.base': 'Page must be a number.',
@@ -114,17 +137,17 @@ export const deleteAccountSchema = Joi.object({
 });
 
 export const updateKeyAccountSchema = Joi.object({
-    distributorId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).required().messages({
-        'string.base': 'Distributor ID should be a type of text',
-        'string.empty': 'Distributor ID cannot be empty',
-        'string.pattern.base': 'Distributor ID must be a valid MongoDB ObjectId',
-        'any.required': 'Distributor ID is a required field',
-    }),
     accountId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).required().messages({
         'string.base': 'Account ID should be a type of text',
         'string.empty': 'Account ID cannot be empty',
         'string.pattern.base': 'Account ID must be a valid MongoDB ObjectId',
         'any.required': 'Account ID is a required field',
+    }),
+    distributorId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).required().messages({
+        'string.base': 'Distributor ID should be a type of text',
+        'string.empty': 'Distributor ID cannot be empty',
+        'string.pattern.base': 'Distributor ID must be a valid MongoDB ObjectId',
+        'any.required': 'Distributor ID is a required field',
     }),
     contactName: Joi.string().trim().min(2).max(30).required().messages({
         'string.base': 'Contact name should be a type of text',
@@ -159,34 +182,34 @@ export const updateKeyAccountSchema = Joi.object({
         'number.precision': 'Value must have no more than 2 decimal places.',
         'any.required': 'Value is required.',
     }),
-    status: Joi.string().trim().valid("active", "inactive", "pending").required().messages({
-        'string.base': 'Status should be a type of text',
-        'any.only': 'Status must be one of {{#valids}}',
-        'any.required': 'Status is a required field',
+    statusId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).required().messages({
+        'string.base': 'Status ID should be a type of text',
+        'string.empty': 'Status ID cannot be empty',
+        'string.pattern.base': 'Status ID must be a valid MongoDB ObjectId',
+        'any.required': 'Status ID is a required field',
     }),
-    region: Joi.string().trim().min(2).max(50).optional().default(null).messages({
-        'string.base': 'Region should be a type of text',
-        'string.empty': 'Region cannot be empty',
-        'string.min': 'Region have a minimum length of {#limit}',
-        'string.max': 'Region should have a maximum length of {#limit}',
-        'any.required': 'Region is required.'
+    regionId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).required().messages({
+        'string.base': 'Region ID should be a type of text',
+        'string.empty': 'Region ID cannot be empty',
+        'string.pattern.base': 'Region ID must be a valid MongoDB ObjectId',
+        'any.required': 'Region ID is a required field',
     }),
-    adoptionLevel: Joi.string().trim().min(2).max(50).optional().default("no contact").messages({
-        'string.base': 'Adoption level should be a type of text',
-        'string.empty': 'Adoption level cannot be empty',
-        'string.min': 'Adoption level have a minimum length of {#limit}',
-        'string.max': 'Adoption level should have a maximum length of {#limit}',
+    adoptionLevelId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).required().messages({
+        'string.base': 'Adoption level ID should be a type of text',
+        'string.empty': 'Adoption level ID cannot be empty',
+        'string.pattern.base': 'Adoption level ID must be a valid MongoDB ObjectId',
+        'any.required': 'Adoption level is a required field',
     }),
-    lastContact: Joi.string().trim().optional().default(null).messages({
-        'string.base': 'Last contact should be a type of text',
-        'string.empty': 'Last contact  cannot be empty',
+    lastContact: Joi.string().pattern(/^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])\/\d{4}$/).required().messages({
+        "string.pattern.base": "Last Contact must be in MM/DD/YYYY format",
+        "any.required": "Last Contact is required"
     }),
-    distributor: Joi.string().trim().min(2).max(50).optional().default(null).messages({
-        'string.base': 'Distributor should be a type of text',
-        'string.empty': 'Distributor cannot be empty',
-        'string.min': 'Distributor have a minimum length of {#limit}',
-        'string.max': 'Distributor should have a maximum length of {#limit}',
-    }),
+    distributorNameId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).required().messages({
+        'string.base': 'Distributor name ID should be a type of text',
+        'string.empty': 'Distributor name ID cannot be empty',
+        'string.pattern.base': 'Distributor name ID must be a valid MongoDB ObjectId',
+        'any.required': 'Distributor name ID is a required field',
+    })
 });
 
 export const getKeyAccountDetailsSchema = Joi.object({

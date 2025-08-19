@@ -26,3 +26,23 @@ export const addAccountNoteSchema = Joi.object({
     }),
 });
 
+export const deleteAccountNoteSchema = Joi.object({
+    distributorId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).required().messages({
+        'string.base': 'Distributor ID should be a type of text',
+        'string.empty': 'Distributor ID cannot be empty',
+        'string.pattern.base': 'Distributor ID must be a valid MongoDB ObjectId',
+        'any.required': 'Distributor ID is a required field',
+    }),
+    accountId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).required().messages({
+        'string.base': 'Account ID should be a type of text',
+        'string.empty': 'Account ID cannot be empty',
+        'string.pattern.base': 'Account ID must be a valid MongoDB ObjectId',
+        'any.required': 'Account ID is a required field',
+    }),
+    noteId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).required().messages({
+        'string.base': 'Note ID should be a type of text',
+        'string.empty': 'Note ID cannot be empty',
+        'string.pattern.base': 'Note ID must be a valid MongoDB ObjectId',
+        'any.required': 'Note ID is a required field',
+    }),
+})

@@ -21,7 +21,14 @@ export const addKeyAccountController = async (req, res) => {
             let account_adoptionLevelId = await getAdoptionLevelById({ levelId: body?.adoptionLevelId });
             let account_distributor = await getDistributorNameById({ _id: body?.distributorNameId });
             let distributor_info = await getDistributorDetails({ queryType: "createdBy", _id: body.distributorId, createdBy: user._id });
-            if (body.regionId && !account_regionId.status) {
+            if (!distributor_info.status) {
+                response = {
+                    status: 0,
+                    message: RESPONSE_MESSAGES.DISTRIBUTOR_NOT_FOUND,
+                    statusCode: RESPONSE_CODES.NOT_FOUND,
+                    data: {}
+                };
+            } else if (body.regionId && !account_regionId.status) {
                 response = {
                     status: 0,
                     message: RESPONSE_MESSAGES.REGION_INVALID_ID,
@@ -47,13 +54,6 @@ export const addKeyAccountController = async (req, res) => {
                     status: 0,
                     message: RESPONSE_MESSAGES.INVALID_STATUS_ID,
                     statusCode: RESPONSE_CODES.BAD_REQUEST,
-                    data: {}
-                };
-            } else if (!distributor_info.status) {
-                response = {
-                    status: 0,
-                    message: RESPONSE_MESSAGES.DISTRIBUTOR_NOT_FOUND,
-                    statusCode: RESPONSE_CODES.NOT_FOUND,
                     data: {}
                 };
             } else {
@@ -191,11 +191,43 @@ export const updateKeyAccountController = async (req, res) => {
         let user_info = await getUserDetails({ queryType: "limited_detail", userId: body.createdBy });
         if (user_info.status) {
             let distributor_info = await getDistributorDetails({ queryType: "createdBy", _id: body.distributorId, createdBy: user._id });
+            let account_regionId = await getRegionById({ regionId: body.regionId });
+            let account_adoptionLevelId = await getAdoptionLevelById({ levelId: body.adoptionLevelId });
+            let account_distributor = await getDistributorNameById({ _id: body.distributorNameId });
+            let account_statusId = await getStatusById({ statusId: body.statusId });
             if (!distributor_info.status) {
                 response = {
                     status: 0,
                     message: RESPONSE_MESSAGES.DISTRIBUTOR_NOT_FOUND,
                     statusCode: RESPONSE_CODES.NOT_FOUND,
+                    data: {}
+                };
+            } else if (!account_regionId.status) {
+                response = {
+                    status: 0,
+                    message: RESPONSE_MESSAGES.REGION_INVALID_ID,
+                    statusCode: RESPONSE_CODES.BAD_REQUEST,
+                    data: {}
+                };
+            } else if (!account_adoptionLevelId.status) {
+                response = {
+                    status: 0,
+                    message: RESPONSE_MESSAGES.INVALID_LEVEL_ID,
+                    statusCode: RESPONSE_CODES.BAD_REQUEST,
+                    data: {}
+                };
+            } else if (!account_distributor.status) {
+                response = {
+                    status: 0,
+                    message: RESPONSE_MESSAGES.INVALID_DISTRIBUTOR_NAME_ID,
+                    statusCode: RESPONSE_CODES.BAD_REQUEST,
+                    data: {}
+                };
+            } else if (!account_statusId.status) {
+                response = {
+                    status: 0,
+                    message: RESPONSE_MESSAGES.INVALID_STATUS_ID,
+                    statusCode: RESPONSE_CODES.BAD_REQUEST,
                     data: {}
                 };
             } else {

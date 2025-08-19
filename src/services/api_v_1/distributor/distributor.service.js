@@ -87,7 +87,7 @@ export const getDistributorDetails = async ({ queryType, _id, email, phone, crea
                 status: 1,
                 message: RESPONSE_MESSAGES.DISTRIBUTOR_FETCH_SUCCESS,
                 statusCode: RESPONSE_CODES.GET,
-                data: distributor_details
+                data: distributor_details[0]
             };
         } else {
             response = {

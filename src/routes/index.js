@@ -14,7 +14,7 @@ router.use("/distributor", authorizeRoles("manufacturer"), Distributor);
 router.use("/distributorContact", authorizeRoles("manufacturer"), Contact);
 router.use("/distributorNote", authorizeRoles("manufacturer"), Note);
 router.use("/account", authorizeRoles("manufacturer"), Account);
-router.use("/accountcontact", authorizeRoles("manufacturer"), AccountContact);
+router.use("/accountContact", authorizeRoles("manufacturer"), AccountContact);
 router.use("/accountNote", authorizeRoles("manufacturer"), AccountNote);
 
 export default router; 

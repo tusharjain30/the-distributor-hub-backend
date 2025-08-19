@@ -1,8 +1,8 @@
-import { RESPONSE_CODES } from "../../../../../config/constants.js";
+import { RESPONSE_CODES, RESPONSE_MESSAGES } from "../../../../../config/constants.js";
 import { RESPONSE } from "../../../../helpers/response.js";
 import { getDistributorDetails } from "../../../../services/api_v_1/distributor/distributor.service.js";
 import { getDistributorkeyAccountDetails } from "../../../../services/api_v_1/distributor/keyAccount/account.service.js";
-import { addKeyAccountNoteService } from "../../../../services/api_v_1/distributor/keyAccount/note.service.js";
+import { addKeyAccountNoteService, deleteKeyAccountNoteService, getKeyAccountNoteDetails } from "../../../../services/api_v_1/distributor/keyAccount/note.service.js";
 import { getUserDetails } from "../../../../services/api_v_1/user.service.js";
 
 export const addKeyAccountNoteController = async (req, res) => {
@@ -72,7 +72,17 @@ export const deleteKeyAccountNoteController = async (req, res) => {
             } else {
                 let account_info = await getDistributorkeyAccountDetails({ queryType: "distributorId_createdBy", _id: body.accountId, distributorId: body.distributorId, createdBy: body.createdBy });
                 if (account_info.status) {
-                    //.. delete service
+                    let note_info = await getKeyAccountNoteDetails({ queryType: "distributorId_accountId_createdBy", _id: body.noteId, distributorId: body.distributorId, accountId: body.accountId, createdBy: body.createdBy });
+                    if (note_info.status) {
+                        response = await deleteKeyAccountNoteService({ distributorId: body.distributorId, accountId: body.accountId, noteId: body.noteId, createdBy: body.createdBy });
+                    } else {
+                        response = {
+                            status: 0,
+                            message: RESPONSE_MESSAGES.NOTE_NOT_FOUND,
+                            statusCode: RESPONSE_CODES.NOT_FOUND,
+                            data: {}
+                        };
+                    };
                 } else {
                     response = {
                         status: 0,

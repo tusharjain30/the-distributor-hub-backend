@@ -4,7 +4,7 @@ import { addKeyAccountContactSchema, deleteKeyAccountContactSchema } from "../..
 import { addKeyAccountContactController, deleteAccountContactController } from "../../../../controllers/api_v_1/distributor/keyAccount/contact.controller.js";
 const router = express.Router();
 
-router.post("/addContact", validator(addKeyAccountContactSchema), addKeyAccountContactController)
-router.put("/deleteContact", validator(deleteKeyAccountContactSchema), deleteAccountContactController)
+router.post("/", validator(addKeyAccountContactSchema), addKeyAccountContactController)
+router.put("/delete", validator(deleteKeyAccountContactSchema), deleteAccountContactController)
 
 export default router;

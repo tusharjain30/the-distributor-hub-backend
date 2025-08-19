@@ -2,7 +2,7 @@ import moment from "moment-timezone";
 import { ObjectId } from "mongodb";
 import { RESPONSE } from "../../../../helpers/response.js";
 import { COLLECTION_NAMES, RESPONSE_CODES, RESPONSE_MESSAGES } from "../../../../../config/constants.js";
-import { findOneDocument, insertDocument, updateDocument } from "../../../../../config/dbMethods.js";
+import { aggregateDocuments, findOneDocument, insertDocument, updateDocument } from "../../../../../config/dbMethods.js";
 
 export const getDistributorkeyAccountDetails = async ({ queryType, _id, email, phone, distributorId, createdBy }) => {
     try {
@@ -11,35 +11,14 @@ export const getDistributorkeyAccountDetails = async ({ queryType, _id, email, p
             isDeleted: false
         };
 
-        let projection = {};
-
-        const LIMITED_DETAIL_PROJECTION = {
-            contactName: 1,
-            companyName: 1,
-            email: 1,
-            phone: 1,
-            value: 1,
-            status: 1,
-            regions: 1,
-            adoptionLevel: 1,
-            lastContact: 1,
-            distributor: 1,
-            notes: 1,
-            contacts: 1
-        };
-
         if (queryType === 'id') {
             queryFilter._id = new ObjectId(_id);
         } else if (queryType === 'phone') {
             queryFilter.phone = phone;
-        } else if (queryType === 'limited_detail') {
-            queryFilter._id = new ObjectId(_id);
-            projection = LIMITED_DETAIL_PROJECTION;
         } else if (queryType === "distributorId_createdBy") {
             queryFilter._id = new ObjectId(_id);
             queryFilter.distributorId = new ObjectId(distributorId);
             queryFilter.createdBy = new ObjectId(createdBy);
-            projection = LIMITED_DETAIL_PROJECTION;
         } else if (queryType === "emailNotEqual") {
             queryFilter.email = email.toLowerCase();
             queryFilter._id = { $ne: new ObjectId(_id) };
@@ -49,13 +28,158 @@ export const getDistributorkeyAccountDetails = async ({ queryType, _id, email, p
         } else {
             queryFilter.email = email.toLowerCase();
         };
-        const account_details = await findOneDocument(COLLECTION_NAMES.DISTRIBUTOR_KEY_ACCOUNTS, queryFilter, projection);
-        if (account_details) {
+        const pipeline = [
+            {
+                $match: queryFilter
+            },
+            {
+                $lookup: {
+                    from: COLLECTION_NAMES.REGIONS,
+                    let: { targetId: "$regionId" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $ne: ["$$targetId", null] },
+                                        { $eq: ["$_id", "$$targetId"] }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            $project: {
+                                _id: 0,
+                                region: 1
+                            }
+                        }
+                    ],
+                    as: "region"
+                }
+            },
+            {
+                $unwind: {
+                    path: "$region",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $lookup: {
+                    from: COLLECTION_NAMES.STATUS,
+                    let: { targetId: "$statusId" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $ne: ["$$targetId", null] },
+                                        { $eq: ["$_id", "$$targetId"] }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            $project: {
+                                _id: 0,
+                                status: 1
+                            }
+                        }
+                    ],
+                    as: "status"
+                }
+            },
+            {
+                $unwind: {
+                    path: "$status",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $lookup: {
+                    from: COLLECTION_NAMES.ADOPTION_LEVELS,
+                    let: { targetId: "$adoptionLevelId" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $ne: ["$$targetId", null] },
+                                        { $eq: ["$_id", "$$targetId"] }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            $project: {
+                                _id: 0,
+                                level: 1
+                            }
+                        }
+                    ],
+                    as: "adoptionLevel"
+                }
+            },
+            {
+                $unwind: {
+                    path: "$adoptionLevel",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $lookup: {
+                    from: COLLECTION_NAMES.DISTRIBUTOR_NAMES,
+                    let: { targetId: "$distributorNameId" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $ne: ["$$targetId", null] },
+                                        { $eq: ["$_id", "$$targetId"] }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            $project: {
+                                _id: 0,
+                                distributor: 1
+                            }
+                        }
+                    ],
+                    as: "distributor"
+                }
+            },
+            {
+                $unwind: {
+                    path: "$distributor",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $project: {
+                    contactName: 1,
+                    companyName: 1,
+                    email: 1,
+                    phone: 1,
+                    value: 1,
+                    region: "$region.region",
+                    status: "$status.status",
+                    adoptionLevel: "$adoptionLevel.level",
+                    lastContact: 1,
+                    distributor: "$distributor.distributor",
+                    contacts: 1,
+                    notes: 1,
+                }
+            }
+        ];
+        const account_details = await aggregateDocuments(COLLECTION_NAMES.DISTRIBUTOR_KEY_ACCOUNTS, pipeline);
+        if (account_details.length !== 0) {
             response = {
                 status: 1,
                 message: RESPONSE_MESSAGES.ACCOUNT_FETCH_SUCCESS,
                 statusCode: RESPONSE_CODES.GET,
-                data: account_details
+                data: account_details[0]
             };
         } else {
             response = {
@@ -131,7 +255,7 @@ export const addDistributorKeyAccountService = async ({ contactName, companyName
     };
 };
 
-export const distributorKeyAccountListingService = async ({ createdBy, distributorId, search, region, status, distributor, page, limit }) => {
+export const distributorKeyAccountListingService = async ({ createdBy, distributorId, search, regionId, statusId, distributorNameId, page, limit }) => {
     try {
         let response = RESPONSE;
 
@@ -141,6 +265,8 @@ export const distributorKeyAccountListingService = async ({ createdBy, distribut
             isDeleted: false
         };
 
+        const skip = (page - 1) * limit;
+
         if (search) {
             filter.$or = [
                 { companyName: { $regex: search, $options: "i" } },
@@ -149,31 +275,168 @@ export const distributorKeyAccountListingService = async ({ createdBy, distribut
             ];
         };
 
-        if (region && region.toLowerCase() !== "all" && region !== "") {
-            filter.region = { $regex: region, $options: "i" };
+        if (regionId && regionId !== "all") {
+            filter.regionId = new ObjectId(regionId);
         };
 
-        if (status && status.toLowerCase() !== "all") {
-            filter.status = status;
+        if (statusId && statusId !== "all") {
+            filter.statusId = new ObjectId(statusId);
         };
 
-        if (distributor && distributor.toLowerCase() !== "all") {
-            filter["distributor"] = { $regex: distributor, $options: "i" };
+        if (distributorNameId && distributorNameId !== "all") {
+            filter["distributorNameId"] = new ObjectId(distributorNameId);
         };
-        const result = await find(COLLECTION_NAMES.DISTRIBUTOR_KEY_ACCOUNTS, filter, {
-            contactName: 1,
-            companyName: 1,
-            email: 1,
-            phone: 1,
-            value: 1,
-            region: 1,
-            status: 1,
-            adoptionLevel: 1,
-            lastContact: 1,
-            distributor: 1,
-            contacts: 1,
-            notes: 1,
-        }, page, limit);
+
+        const pipeline = [
+            {
+                $match: filter
+            },
+            {
+                $lookup: {
+                    from: COLLECTION_NAMES.REGIONS,
+                    let: { targetId: "$regionId" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $ne: ["$$targetId", null] },
+                                        { $eq: ["$_id", "$$targetId"] }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            $project: {
+                                _id: 0,
+                                region: 1
+                            }
+                        }
+                    ],
+                    as: "region"
+                }
+            },
+            {
+                $unwind: {
+                    path: "$region",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $lookup: {
+                    from: COLLECTION_NAMES.STATUS,
+                    let: { targetId: "$statusId" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $ne: ["$$targetId", null] },
+                                        { $eq: ["$_id", "$$targetId"] }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            $project: {
+                                _id: 0,
+                                status: 1
+                            }
+                        }
+                    ],
+                    as: "status"
+                }
+            },
+            {
+                $unwind: {
+                    path: "$status",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $lookup: {
+                    from: COLLECTION_NAMES.ADOPTION_LEVELS,
+                    let: { targetId: "$adoptionLevelId" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $ne: ["$$targetId", null] },
+                                        { $eq: ["$_id", "$$targetId"] }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            $project: {
+                                _id: 0,
+                                level: 1
+                            }
+                        }
+                    ],
+                    as: "adoptionLevel"
+                }
+            },
+            {
+                $unwind: {
+                    path: "$adoptionLevel",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $lookup: {
+                    from: COLLECTION_NAMES.DISTRIBUTOR_NAMES,
+                    let: { targetId: "$distributorNameId" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $ne: ["$$targetId", null] },
+                                        { $eq: ["$_id", "$$targetId"] }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            $project: {
+                                _id: 0,
+                                distributor: 1
+                            }
+                        }
+                    ],
+                    as: "distributor"
+                }
+            },
+            {
+                $unwind: {
+                    path: "$distributor",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $project: {
+                    contactName: 1,
+                    companyName: 1,
+                    email: 1,
+                    phone: 1,
+                    value: 1,
+                    region: "$region.region",
+                    status: "$status.status",
+                    adoptionLevel: "$adoptionLevel.level",
+                    lastContact: 1,
+                    distributor: "$distributor.distributor",
+                    contacts: 1,
+                    notes: 1,
+                }
+            },
+            { $skip: skip },
+            { $limit: limit }
+        ];
+
+        const result = await aggregateDocuments(COLLECTION_NAMES.DISTRIBUTOR_KEY_ACCOUNTS, pipeline);
+
         response = {
             status: 1,
             message: RESPONSE_MESSAGES.FETCH_SUCCESS,
@@ -235,7 +498,7 @@ export const deleteDistributorKeyAccountService = async ({ distributorId, create
     };
 };
 
-export const updateDistributorKeyAccountService = async ({ distributorId, accountId, createdBy, contactName, companyName, email, phone, value, status, region, adoptionLevel, lastContact, distributor, updatedBy }) => {
+export const updateDistributorKeyAccountService = async ({ distributorId, accountId, createdBy, contactName, companyName, email, phone, value, statusId, regionId, adoptionLevelId, lastContact, distributorNameId, updatedBy }) => {
     try {
         let response = RESPONSE;
         const currentTime = parseInt(moment().tz(process.env.TIMEZONE).format("x"));
@@ -250,11 +513,11 @@ export const updateDistributorKeyAccountService = async ({ distributorId, accoun
                 email,
                 phone,
                 value,
-                status,
-                region,
-                adoptionLevel,
+                statusId: new ObjectId(statusId),
+                regionId: new ObjectId(regionId),
+                adoptionLevelId: new ObjectId(adoptionLevelId),
                 lastContact,
-                distributor,
+                distributorNameId: new ObjectId(distributorNameId),
                 updatedBy: new ObjectId(updatedBy),
                 updatedAt: currentTime
             }
